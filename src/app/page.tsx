@@ -41,6 +41,30 @@ export default function Home(): React.ReactElement {
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
   const [thumbnailCache, setThumbnailCache] = useState<Map<string, string>>(new Map());
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // ページ読み込み時にURLパラメータから検索語を取得
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const queryParam = params.get("q");
+      if (queryParam) {
+        setSearchQuery(decodeURIComponent(queryParam));
+      }
+    }
+  }, []);
+
+  // ページ読み込み時に検索inputにフォーカス
+  React.useEffect(() => {
+    // 少し遅延させて確実にフォーカスできるようにする
+    const timer = setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   /**
    * サムネイル用のBlob URLを取得（キャッシュ付き）
@@ -687,6 +711,7 @@ export default function Home(): React.ReactElement {
                   }}
                 />
                 <Input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="検索またはドメイン..."
                   value={searchQuery}
