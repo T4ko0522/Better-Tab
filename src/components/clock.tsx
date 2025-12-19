@@ -25,11 +25,22 @@ interface WeatherData {
  *
  * @returns {React.ReactElement} 時計コンポーネント
  */
+// グローバルな天気データキャッシュ（二重fetchを防ぐ）
+const weatherCache: {
+  data: WeatherData | null;
+  loading: boolean;
+  promise: Promise<WeatherData | null> | null;
+} = {
+  data: null,
+  loading: false,
+  promise: null,
+};
+
 export function Clock(): React.ReactElement {
   const [time, setTime] = useState<string>("00:00:00");
   const [mounted, setMounted] = useState(false);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(weatherCache.data);
+  const [weatherLoading, setWeatherLoading] = useState(!weatherCache.data && weatherCache.loading);
 
   useEffect(() => {
     // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
@@ -55,72 +66,121 @@ export function Clock(): React.ReactElement {
      * 天気情報を取得する
      */
     const fetchWeather = async (): Promise<void> => {
-      setWeatherLoading(true);
-      try {
-        // 位置情報を取得
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              const response = await fetch(
-                `/api/weather?lat=${latitude}&lon=${longitude}`
-              );
-              if (response.ok) {
-                const data: unknown = await response.json();
-                if (
-                  typeof data === "object" &&
-                  data !== null &&
-                  "temperature" in data &&
-                  "description" in data &&
-                  "icon" in data &&
-                  "location" in data
-                ) {
-                  setWeather(data as WeatherData);
-                }
-              }
-              setWeatherLoading(false);
-            },
-            async () => {
-              // 位置情報が取得できない場合はデフォルト（東京）で取得
-              const response = await fetch("/api/weather");
-              if (response.ok) {
-                const data: unknown = await response.json();
-                if (
-                  typeof data === "object" &&
-                  data !== null &&
-                  "temperature" in data &&
-                  "description" in data &&
-                  "icon" in data &&
-                  "location" in data
-                ) {
-                  setWeather(data as WeatherData);
-                }
-              }
-              setWeatherLoading(false);
-            }
-          );
-        } else {
-          // 位置情報APIが利用できない場合はデフォルト（東京）で取得
-          const response = await fetch("/api/weather");
-          if (response.ok) {
-            const data: unknown = await response.json();
-            if (
-              typeof data === "object" &&
-              data !== null &&
-              "temperature" in data &&
-              "description" in data &&
-              "icon" in data &&
-              "location" in data
-            ) {
-              setWeather(data as WeatherData);
-            }
-          }
-          setWeatherLoading(false);
-        }
-      } catch (error) {
-        console.error("Failed to fetch weather:", error);
+      // 既にキャッシュがある場合はそれを使用
+      if (weatherCache.data) {
+        setWeather(weatherCache.data);
         setWeatherLoading(false);
+        return;
       }
+
+      // 既にfetch中の場合はそのPromiseを待つ
+      if (weatherCache.promise) {
+        try {
+          const data = await weatherCache.promise;
+          if (data) {
+            setWeather(data);
+          }
+        } catch {
+          // エラー時は何もしない
+        }
+        setWeatherLoading(false);
+        return;
+      }
+
+      // 初回fetch
+      weatherCache.loading = true;
+      setWeatherLoading(true);
+      
+      const fetchPromise = (async (): Promise<WeatherData | null> => {
+        try {
+          // 位置情報を取得
+          if (navigator.geolocation) {
+            return new Promise<WeatherData | null>((resolve) => {
+              navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                  const { latitude, longitude } = position.coords;
+                  const response = await fetch(
+                    `/api/weather?lat=${latitude}&lon=${longitude}`
+                  );
+                  if (response.ok) {
+                    const data: unknown = await response.json();
+                    if (
+                      typeof data === "object" &&
+                      data !== null &&
+                      "temperature" in data &&
+                      "description" in data &&
+                      "icon" in data &&
+                      "location" in data
+                    ) {
+                      const weatherData = data as WeatherData;
+                      weatherCache.data = weatherData;
+                      setWeather(weatherData);
+                      resolve(weatherData);
+                      return;
+                    }
+                  }
+                  resolve(null);
+                },
+                async () => {
+                  // 位置情報が取得できない場合はデフォルト（東京）で取得
+                  const response = await fetch("/api/weather");
+                  if (response.ok) {
+                    const data: unknown = await response.json();
+                    if (
+                      typeof data === "object" &&
+                      data !== null &&
+                      "temperature" in data &&
+                      "description" in data &&
+                      "icon" in data &&
+                      "location" in data
+                    ) {
+                      const weatherData = data as WeatherData;
+                      weatherCache.data = weatherData;
+                      setWeather(weatherData);
+                      resolve(weatherData);
+                      return;
+                    }
+                  }
+                  resolve(null);
+                }
+              );
+            });
+          } else {
+            // 位置情報APIが利用できない場合はデフォルト（東京）で取得
+            const response = await fetch("/api/weather");
+            if (response.ok) {
+              const data: unknown = await response.json();
+              if (
+                typeof data === "object" &&
+                data !== null &&
+                "temperature" in data &&
+                "description" in data &&
+                "icon" in data &&
+                "location" in data
+              ) {
+                const weatherData = data as WeatherData;
+                weatherCache.data = weatherData;
+                setWeather(weatherData);
+                return weatherData;
+              }
+            }
+            return null;
+          }
+        } catch (error) {
+          console.error("Failed to fetch weather:", error);
+          return null;
+        } finally {
+          weatherCache.loading = false;
+          weatherCache.promise = null;
+        }
+      })();
+
+      weatherCache.promise = fetchPromise;
+      const result = await fetchPromise;
+      if (result) {
+        setWeather(result);
+      }
+      setWeatherLoading(false);
     };
 
     // 初回更新

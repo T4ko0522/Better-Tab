@@ -15,6 +15,17 @@ interface Holidays {
   [date: string]: string;
 }
 
+// グローバルな祝日データキャッシュ（二重fetchを防ぐ）
+const holidaysCache: {
+  data: Holidays;
+  loading: boolean;
+  promise: Promise<Holidays> | null;
+} = {
+  data: {},
+  loading: false,
+  promise: null,
+};
+
 /**
  * カレンダーコンポーネント
  * 日本時間（JST）で現在の日付とカレンダーを表示
@@ -24,7 +35,7 @@ interface Holidays {
 export function Calendar(): React.ReactElement {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [holidays, setHolidays] = useState<Holidays>({});
+  const [holidays, setHolidays] = useState<Holidays>(holidaysCache.data);
 
   // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
   useEffect(() => {
@@ -36,16 +47,33 @@ export function Calendar(): React.ReactElement {
      * 祝日データを取得する
      */
     const fetchHolidays = async (): Promise<void> => {
-      try {
-        const now = new Date();
-        const year = now.getFullYear();
+      // 既にキャッシュがある場合はそれを使用
+      if (Object.keys(holidaysCache.data).length > 0) {
+        setHolidays(holidaysCache.data);
+        return;
+      }
 
-        // 今年、去年、来年の祝日を取得
-        const years = [year - 1, year, year + 1];
-        const allHolidays: Holidays = {};
+      // 既にfetch中の場合はそのPromiseを待つ
+      if (holidaysCache.promise) {
+        try {
+          const data = await holidaysCache.promise;
+          setHolidays(data);
+        } catch {
+          // エラー時は何もしない
+        }
+        return;
+      }
 
-        for (const y of years) {
-          const response = await fetch(`/api/holidays?year=${y}`);
+      // 初回fetch
+      holidaysCache.loading = true;
+      
+      const fetchPromise = (async (): Promise<Holidays> => {
+        try {
+          const now = new Date();
+          const year = now.getFullYear();
+
+          // 現在の年の祝日を取得
+          const response = await fetch(`/api/holidays?year=${year}`);
           if (response.ok) {
             const data: unknown = await response.json();
             if (
@@ -55,15 +83,24 @@ export function Calendar(): React.ReactElement {
               typeof data.holidays === "object" &&
               data.holidays !== null
             ) {
-              Object.assign(allHolidays, data.holidays as Holidays);
+              const holidaysData = data.holidays as Holidays;
+              holidaysCache.data = holidaysData;
+              setHolidays(holidaysData);
+              return holidaysData;
             }
           }
+          return {};
+        } catch (error) {
+          console.error("Failed to fetch holidays:", error);
+          return {};
+        } finally {
+          holidaysCache.loading = false;
+          holidaysCache.promise = null;
         }
+      })();
 
-        setHolidays(allHolidays);
-      } catch (error) {
-        console.error("Failed to fetch holidays:", error);
-      }
+      holidaysCache.promise = fetchPromise;
+      await fetchPromise;
     };
 
     fetchHolidays();

@@ -17,6 +17,17 @@ export interface TrendingArticle {
   createdAt: string;
 }
 
+// グローバルなトレンド記事データキャッシュ（二重fetchを防ぐ）
+const articlesCache: {
+  data: TrendingArticle[];
+  loading: boolean;
+  promise: Promise<TrendingArticle[]> | null;
+} = {
+  data: [],
+  loading: false,
+  promise: null,
+};
+
 /**
  * Qiitaアイコンコンポーネント
  *
@@ -55,8 +66,8 @@ const ZennIcon = (): React.ReactElement => (
  * @returns {React.ReactElement} トレンド記事コンポーネント
  */
 export function TrendingArticles(): React.ReactElement {
-  const [articles, setArticles] = useState<TrendingArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<TrendingArticle[]>(articlesCache.data);
+  const [loading, setLoading] = useState(!articlesCache.data.length && articlesCache.loading);
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -68,19 +79,53 @@ export function TrendingArticles(): React.ReactElement {
      * トレンド記事を取得する
      */
     const fetchArticles = async (): Promise<void> => {
-      try {
-        const response = await fetch("/api/trending");
-        if (response.ok) {
-          const data: unknown = await response.json();
-          if (Array.isArray(data)) {
-            setArticles(data);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch trending articles:", error);
-      } finally {
+      // 既にキャッシュがある場合はそれを使用
+      if (articlesCache.data.length > 0) {
+        setArticles(articlesCache.data);
         setLoading(false);
+        return;
       }
+
+      // 既にfetch中の場合はそのPromiseを待つ
+      if (articlesCache.promise) {
+        try {
+          const data = await articlesCache.promise;
+          setArticles(data);
+        } catch {
+          // エラー時は何もしない
+        }
+        setLoading(false);
+        return;
+      }
+
+      // 初回fetch
+      articlesCache.loading = true;
+      setLoading(true);
+      
+      const fetchPromise = (async (): Promise<TrendingArticle[]> => {
+        try {
+          const response = await fetch("/api/trending");
+          if (response.ok) {
+            const data: unknown = await response.json();
+            if (Array.isArray(data)) {
+              articlesCache.data = data;
+              setArticles(data);
+              return data;
+            }
+          }
+          return [];
+        } catch (error) {
+          console.error("Failed to fetch trending articles:", error);
+          return [];
+        } finally {
+          articlesCache.loading = false;
+          articlesCache.promise = null;
+          setLoading(false);
+        }
+      })();
+
+      articlesCache.promise = fetchPromise;
+      await fetchPromise;
     };
 
     fetchArticles();
