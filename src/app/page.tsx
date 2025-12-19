@@ -772,7 +772,7 @@ export default function Home(): React.ReactElement {
                   placeholder="検索またはドメイン..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 sm:pl-10 text-sm sm:text-base bg-black/30 backdrop-blur-sm relative z-0 text-white placeholder:text-white"
+                  className="pl-9 sm:pl-10 text-sm sm:text-base bg-black/30 backdrop-blur-md relative z-0 text-white placeholder:text-white"
                 />
               </div>
             </div>
