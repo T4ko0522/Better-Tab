@@ -159,15 +159,32 @@ export function ImageCropper({
             <label className="text-sm font-medium block mb-2">
               ズーム: {Math.round(zoom * 100)}%
             </label>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.1}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-full zoom-slider"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={100}
+                max={300}
+                step={1}
+                value={Math.round(zoom * 100)}
+                onChange={(e) => setZoom(Number(e.target.value) / 100)}
+                className="flex-1 zoom-slider"
+              />
+              <input
+                type="number"
+                min={100}
+                max={300}
+                step={1}
+                value={Math.round(zoom * 100)}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 100 && value <= 300) {
+                    setZoom(value / 100);
+                  }
+                }}
+                className="w-20 px-2 py-1 text-sm border border-input bg-background rounded-md"
+              />
+              <span className="text-sm text-muted-foreground w-4">%</span>
+            </div>
           </div>
         </div>
         <DialogFooter>
