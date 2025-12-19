@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type React from "react";
+import { Sun, Moon } from "lucide-react";
 import Image from "next/image";
 import { useAppSettings } from "@/hooks/useAppSettings";
 
@@ -45,6 +47,36 @@ function getTimeOfDayIconSuffix(): string {
   }
   // day: 6:00~17:59
   return "d";
+}
+
+/**
+ * 晴れの場合のみSun/Moonアイコンを返す
+ * それ以外はnullを返す（Imageコンポーネントを使用）
+ *
+ * @param {string} description - 天気の説明（例: "晴れ", "雨"）
+ * @param {string} icon - アイコンコード（例: "01d", "10d"）
+ * @param {number} size - アイコンサイズ
+ * @returns {React.ReactElement | null} lucideアイコンコンポーネントまたはnull
+ */
+function getSunMoonIcon(
+  description: string,
+  icon: string,
+  size: number
+): React.ReactElement | null {
+  // 晴れの場合のみSun/Moonを使用
+  const isClear = icon.startsWith("01") || description.includes("晴");
+  
+  if (!isClear) {
+    return null;
+  }
+
+  const isNight = icon.endsWith("n");
+
+  return isNight ? (
+    <Moon size={size} style={{ color: "#FFFF4D", fill: "#FFFF4D" }} />
+  ) : (
+    <Sun size={size} style={{ color: "#FF7300", fill: "#FF7300" }} />
+  );
 }
 
 /**
@@ -379,14 +411,20 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
         !hideWeather && weather && (
           <div className="mt-2">
             <div className="flex items-center gap-2">
-              <Image
-                src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
-                alt={weather.description}
-                width={32}
-                height={32}
-                className="size-8"
-                unoptimized
-              />
+              {getSunMoonIcon(
+                weather.description,
+                getTimeBasedIcon(weather.icon),
+                32
+              ) || (
+                <Image
+                  src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
+                  alt={weather.description}
+                  width={32}
+                  height={32}
+                  className="size-8"
+                  unoptimized
+                />
+              )}
               <div className="flex flex-col">
                 {weather.temperature !== null && (
                   <div className="text-sm font-medium text-white">
@@ -420,24 +458,33 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
               <div className="mt-2 pt-2 border-t border-white/20">
                 <div className="text-xs text-white/80 mb-1">今後の予報</div>
                 <div className="space-y-1">
-                  {weather.futureForecast.map((forecast, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 text-xs text-white"
-                    >
-                      <Image
-                        src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
-                        alt={forecast.description}
-                        width={16}
-                        height={16}
-                        className="size-4"
-                        unoptimized
-                      />
-                      <span className="text-xs">
-                        {forecast.time}: {forecast.description}
-                      </span>
-                    </div>
-                  ))}
+                  {weather.futureForecast.map((forecast, index) => {
+                    const sunMoonIcon = getSunMoonIcon(
+                      forecast.description,
+                      forecast.icon,
+                      16
+                    );
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 text-xs text-white"
+                      >
+                        {sunMoonIcon || (
+                          <Image
+                            src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
+                            alt={forecast.description}
+                            width={16}
+                            height={16}
+                            className="size-4"
+                            unoptimized
+                          />
+                        )}
+                        <span className="text-xs">
+                          {forecast.time}: {forecast.description}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
