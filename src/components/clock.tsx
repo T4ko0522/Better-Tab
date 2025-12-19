@@ -126,8 +126,15 @@ export function Clock(): React.ReactElement {
                   }
                   resolve(null);
                 },
-                async () => {
-                  // 位置情報が取得できない場合はデフォルト（東京）で取得
+                async (error: GeolocationPositionError) => {
+                  // 位置情報が拒否された場合は天気を非表示にする
+                  if (error.code === error.PERMISSION_DENIED || error.code === 1) {
+                    setWeather(null);
+                    setWeatherLoading(false);
+                    resolve(null);
+                    return;
+                  }
+                  // その他のエラーの場合はデフォルト（東京）で取得
                   const response = await fetch("/api/weather");
                   if (response.ok) {
                     const data: unknown = await response.json();
