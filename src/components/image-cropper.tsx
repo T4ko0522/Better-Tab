@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Cropper from "react-easy-crop";
 import type { Area, Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
@@ -45,6 +45,46 @@ export function ImageCropper({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [aspect, setAspect] = useState<number>(16 / 9);
+  const previousAspectRef = useRef<number>(16 / 9);
+
+  /**
+   * 画面サイズに応じてアスペクト比を設定する
+   */
+  useEffect(() => {
+    const updateAspect = (): void => {
+      const newAspect = window.innerWidth < 768 ? 9 / 16 : 16 / 9;
+      // アスペクト比が変わった場合はcropとzoomをリセット
+      if (newAspect !== previousAspectRef.current) {
+        setAspect(newAspect);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        previousAspectRef.current = newAspect;
+      }
+    };
+
+    // 初回レンダリング時にアスペクト比を設定
+    const initialAspect = window.innerWidth < 768 ? 9 / 16 : 16 / 9;
+    setAspect(initialAspect);
+    previousAspectRef.current = initialAspect;
+
+    window.addEventListener("resize", updateAspect);
+
+    return () => {
+      window.removeEventListener("resize", updateAspect);
+    };
+  }, []);
+
+  /**
+   * ダイアログが開かれたときにcropとzoomをリセット
+   */
+  useEffect(() => {
+    if (open) {
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    }
+  }, [open]);
 
   /**
    * トリミング領域が変更されたときに呼ばれる
@@ -146,7 +186,7 @@ export function ImageCropper({
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={16 / 9}
+            aspect={aspect}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropChange}
