@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getItem, setItem, STORE_NAMES } from "@/lib/indexeddb-utils";
 
 /**
  * ショートカットの情報を表すインターフェース
@@ -21,52 +22,59 @@ export interface UseShortcutsReturn {
   /** 登録済みのショートカットのリスト */
   shortcuts: Shortcut[];
   /** ショートカットを追加する関数 */
-  addShortcut: (name: string, url: string) => void;
+  addShortcut: (name: string, url: string) => Promise<void>;
   /** ショートカットを削除する関数 */
-  removeShortcut: (id: string) => void;
+  removeShortcut: (id: string) => Promise<void>;
 }
 
-const STORAGE_KEY = "home_shortcuts";
+const STORAGE_KEY = "shortcuts";
 
 /**
  * ショートカットの管理を行うカスタムフック
- * localStorageにショートカットを保存し、管理する機能を提供
+ * IndexedDBにショートカットを保存し、管理する機能を提供
  *
  * @returns {UseShortcutsReturn} ショートカット管理に関する状態と関数
  */
 export function useShortcuts(): UseShortcutsReturn {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
 
-  // 初期化: localStorageからデータを読み込む
+  // 初期化: IndexedDBからデータを読み込む
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    /**
+     * データを読み込む
+     */
+    async function loadShortcuts(): Promise<void> {
       try {
-        const parsed: unknown = JSON.parse(stored);
-        if (
-          Array.isArray(parsed) &&
-          parsed.every(
-            (item): item is Shortcut =>
-              typeof item === "object" &&
-              item !== null &&
-              "id" in item &&
-              "name" in item &&
-              "url" in item &&
-              typeof item.id === "string" &&
-              typeof item.name === "string" &&
-              typeof item.url === "string"
-          )
-        ) {
-          // localStorageからの初期化はuseEffectで行う必要がある
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setShortcuts(parsed);
+        const stored = await getItem(STORE_NAMES.SHORTCUTS, STORAGE_KEY);
+        if (stored) {
+          const parsed = stored as unknown;
+          if (
+            Array.isArray(parsed) &&
+            parsed.every(
+              (item): item is Shortcut =>
+                typeof item === "object" &&
+                item !== null &&
+                "id" in item &&
+                "name" in item &&
+                "url" in item &&
+                typeof item.id === "string" &&
+                typeof item.name === "string" &&
+                typeof item.url === "string"
+            )
+          ) {
+            // IndexedDBからの初期化はuseEffectで行う必要がある
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setShortcuts(parsed);
+          }
         }
       } catch (error) {
-        console.error("Failed to parse stored shortcuts:", error);
+        console.error("Failed to load shortcuts from IndexedDB:", error);
       }
     }
+
+    void loadShortcuts();
   }, []);
 
   /**
@@ -75,7 +83,7 @@ export function useShortcuts(): UseShortcutsReturn {
    * @param {string} name - ショートカットの表示名
    * @param {string} url - ショートカットのURL
    */
-  const addShortcut = (name: string, url: string): void => {
+  const addShortcut = async (name: string, url: string): Promise<void> => {
     const newShortcut: Shortcut = {
       id: Date.now().toString(),
       name,
@@ -83,7 +91,11 @@ export function useShortcuts(): UseShortcutsReturn {
     };
     const updated = [...shortcuts, newShortcut];
     setShortcuts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      await setItem(STORE_NAMES.SHORTCUTS, STORAGE_KEY, updated);
+    } catch (error) {
+      console.error("Failed to save shortcuts to IndexedDB:", error);
+    }
   };
 
   /**
@@ -91,10 +103,14 @@ export function useShortcuts(): UseShortcutsReturn {
    *
    * @param {string} id - 削除するショートカットのID
    */
-  const removeShortcut = (id: string): void => {
+  const removeShortcut = async (id: string): Promise<void> => {
     const updated = shortcuts.filter((s) => s.id !== id);
     setShortcuts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      await setItem(STORE_NAMES.SHORTCUTS, STORAGE_KEY, updated);
+    } catch (error) {
+      console.error("Failed to save shortcuts to IndexedDB:", error);
+    }
   };
 
   return {
