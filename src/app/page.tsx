@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useBackgroundImages, getCachedBlobUrl } from "@/hooks/useBackgroundImages";
+import { useBackgroundImages, getCachedBlobUrl, getDataUrlFromBlobUrl } from "@/hooks/useBackgroundImages";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { Settings, ImagePlus, X, Search, Upload, Github, Twitter } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -296,7 +296,15 @@ export default function Home(): React.ReactElement {
   const isVideo = currentImage ? isVideoUrl(currentImage) : false;
 
   // 現在の画像のサムネイルを取得
-  const currentImageData = images.find((img) => img.url === currentImage);
+  // currentImageがBlob URLの場合は、元のData URLを取得してから検索
+  let searchUrl = currentImage;
+  if (currentImage && currentImage.startsWith("blob:")) {
+    const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+    if (originalDataUrl) {
+      searchUrl = originalDataUrl;
+    }
+  }
+  const currentImageData = images.find((img) => img.url === searchUrl);
   const currentThumbnail = currentImageData?.thumbnail;
 
   if (currentImage && isVideo && currentThumbnail) {

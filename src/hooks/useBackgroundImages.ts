@@ -87,9 +87,14 @@ const DEFAULT_BACKGROUND_IMAGES: BackgroundImage[] = [
  * @returns {UseBackgroundImagesReturn} 背景画像管理に関する状態と関数
  */
 /**
- * Blob URLのキャッシュマップ
+ * Blob URLのキャッシュマップ（Data URL → Blob URL）
  */
 const blobUrlCache = new Map<string, string>();
+
+/**
+ * Blob URLから元のData URLを逆引きするマッピング（Blob URL → Data URL）
+ */
+const blobUrlToDataUrlMap = new Map<string, string>();
 
 /**
  * Data URLをBlob URLに変換してキャッシュから取得する
@@ -115,14 +120,25 @@ export async function getCachedBlobUrl(dataUrl: string): Promise<string> {
     const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);
     
-    // キャッシュに保存
+    // キャッシュに保存（双方向のマッピング）
     blobUrlCache.set(dataUrl, blobUrl);
+    blobUrlToDataUrlMap.set(blobUrl, dataUrl);
     
     return blobUrl;
   } catch {
     // エラー時は元のURLを返す
     return dataUrl;
   }
+}
+
+/**
+ * Blob URLから元のData URLを取得する
+ *
+ * @param {string} blobUrl - Blob URL
+ * @returns {string | null} 元のData URL、見つからない場合はnull
+ */
+export function getDataUrlFromBlobUrl(blobUrl: string): string | null {
+  return blobUrlToDataUrlMap.get(blobUrl) || null;
 }
 
 export function useBackgroundImages(): UseBackgroundImagesReturn {
