@@ -58,6 +58,29 @@ const STORAGE_KEY_SETTINGS = "settings";
 const LOCALSTORAGE_KEY_CURRENT_THUMBNAIL = "current_thumbnail";
 
 /**
+ * デフォルトの背景画像URLのリスト
+ * 初回起動時にIndexedDBに画像が存在しない場合、これらの画像が自動的に追加されます
+ */
+const DEFAULT_BACKGROUND_IMAGES: BackgroundImage[] = [
+  {
+    id: "default-1",
+    url: "/screenshot.png",
+  },
+  {
+    id: "default-2",
+    url: "/screenshot1.png",
+  },
+  {
+    id: "default-3",
+    url: "/screenshot2.png",
+  },
+  {
+    id: "default-4",
+    url: "/screenshot3.png",
+  },
+];
+
+/**
  * 背景画像の管理を行うカスタムフック
  * IndexedDBに画像を保存し、ランダムにシャッフル表示する機能を提供
  *
@@ -140,7 +163,19 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
         const storedImages = await getItem(STORE_NAMES.BACKGROUND_IMAGES, STORAGE_KEY_IMAGES);
         const storedSettings = await getItem(STORE_NAMES.BACKGROUND_SETTINGS, STORAGE_KEY_SETTINGS);
 
-        if (storedImages) {
+        // 初回起動時（画像が存在しない場合）はデフォルト画像を追加
+        if (!storedImages) {
+          setImages(DEFAULT_BACKGROUND_IMAGES);
+          try {
+            await setItem(STORE_NAMES.BACKGROUND_IMAGES, STORAGE_KEY_IMAGES, DEFAULT_BACKGROUND_IMAGES);
+            // 最初の画像を表示
+            if (DEFAULT_BACKGROUND_IMAGES.length > 0) {
+              setCurrentImage(DEFAULT_BACKGROUND_IMAGES[0].url);
+            }
+          } catch (error) {
+            console.error("Failed to save default images to IndexedDB:", error);
+          }
+        } else {
           const parsed = storedImages as unknown;
           if (
             Array.isArray(parsed) &&
@@ -157,6 +192,18 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
           ) {
             // IndexedDBからの初期化はuseEffectで行う必要がある
             setImages(parsed);
+          } else if (Array.isArray(parsed) && parsed.length === 0) {
+            // 空の配列の場合はデフォルト画像を追加
+            setImages(DEFAULT_BACKGROUND_IMAGES);
+            try {
+              await setItem(STORE_NAMES.BACKGROUND_IMAGES, STORAGE_KEY_IMAGES, DEFAULT_BACKGROUND_IMAGES);
+              // 最初の画像を表示
+              if (DEFAULT_BACKGROUND_IMAGES.length > 0) {
+                setCurrentImage(DEFAULT_BACKGROUND_IMAGES[0].url);
+              }
+            } catch (error) {
+              console.error("Failed to save default images to IndexedDB:", error);
+            }
           }
         }
 
