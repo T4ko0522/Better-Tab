@@ -215,8 +215,8 @@ export default function Home(): React.ReactElement {
 
     // ファイルサイズチェック（バイト単位）
     const fileSizeMB = file.size / (1024 * 1024);
-    const WARNING_SIZE_MB = 50;
-    const ERROR_SIZE_MB = 100;
+    const WARNING_SIZE_MB = 100;
+    const ERROR_SIZE_MB = 250;
 
     // 100MB以上はエラー
     if (fileSizeMB >= ERROR_SIZE_MB) {
