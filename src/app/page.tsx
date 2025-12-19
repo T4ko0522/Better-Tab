@@ -293,18 +293,41 @@ export default function Home(): React.ReactElement {
 
   // 背景スタイルを構築
   const backgroundStyle: React.CSSProperties = {};
-  const isVideo = currentImage ? isVideoUrl(currentImage) : false;
+  // currentImageがBlob URLの場合は元のData URLを取得して判定
+  let isVideo = false;
+  if (currentImage) {
+    if (currentImage.startsWith("blob:")) {
+      const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+      if (originalDataUrl) {
+        isVideo = isVideoUrl(originalDataUrl);
+      } else {
+        // 元のData URLが見つからない場合はBlob URLで判定（フォールバック）
+        isVideo = isVideoUrl(currentImage);
+      }
+    } else {
+      isVideo = isVideoUrl(currentImage);
+    }
+  }
 
   // 現在の画像のサムネイルを取得
   // currentImageがBlob URLの場合は、元のData URLを取得してから検索
-  let searchUrl = currentImage;
-  if (currentImage && currentImage.startsWith("blob:")) {
-    const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
-    if (originalDataUrl) {
-      searchUrl = originalDataUrl;
+  let currentImageData: typeof images[0] | undefined;
+  if (currentImage) {
+    if (currentImage.startsWith("blob:")) {
+      // Blob URLの場合は元のData URLを取得して検索
+      const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+      if (originalDataUrl) {
+        currentImageData = images.find((img) => img.url === originalDataUrl);
+      }
+      // 見つからない場合はBlob URLで直接検索（フォールバック）
+      if (!currentImageData) {
+        currentImageData = images.find((img) => img.url === currentImage);
+      }
+    } else {
+      // Data URLまたは通常のURLの場合はそのまま検索
+      currentImageData = images.find((img) => img.url === currentImage);
     }
   }
-  const currentImageData = images.find((img) => img.url === searchUrl);
   const currentThumbnail = currentImageData?.thumbnail;
 
   if (currentImage && isVideo && currentThumbnail) {
@@ -326,7 +349,7 @@ export default function Home(): React.ReactElement {
   // currentImageが変わったら動画の読み込み状態をリセット
   React.useEffect(() => {
     setIsVideoLoaded(false);
-  }, [currentImage]);
+  }, [currentImage, isVideo]);
 
   // バックグラウンド時に動画を停止する
   React.useEffect(() => {
@@ -370,7 +393,20 @@ export default function Home(): React.ReactElement {
           muted
           playsInline
           preload="auto"
-          onLoadedData={() => setIsVideoLoaded(true)}
+          onLoadedData={() => {
+            setIsVideoLoaded(true);
+          }}
+          onError={(e) => {
+            const video = e.currentTarget;
+            console.error("Video load error:", {
+              error: video.error,
+              code: video.error?.code,
+              message: video.error?.message,
+              src: currentImage,
+              networkState: video.networkState,
+              readyState: video.readyState,
+            });
+          }}
           style={{
             opacity: isVideoLoaded ? 1 : 0,
             transition: "opacity 0.3s ease-in-out",
@@ -470,8 +506,31 @@ export default function Home(): React.ReactElement {
                   <p className="text-sm font-medium">登録済みメディア</p>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {images.map((img) => {
-                      const isSelected = currentImage === img.url;
+                      // currentImageがBlob URLの場合は元のData URLに変換して比較
+                      let isSelected = false;
+                      if (currentImage) {
+                        if (currentImage.startsWith("blob:")) {
+                          const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+                          isSelected = originalDataUrl === img.url || currentImage === img.url;
+                        } else {
+                          isSelected = currentImage === img.url;
+                        }
+                      }
                       const isVideoItem = isVideoUrl(img.url);
+                      
+                      // 動画のサムネイルを取得（img.thumbnailがあればそれを使用、なければローカルストレージから取得）
+                      let thumbnailUrl = img.thumbnail;
+                      if (isVideoItem && !thumbnailUrl) {
+                        try {
+                          const cachedThumbnail = localStorage.getItem("current_thumbnail");
+                          if (cachedThumbnail) {
+                            thumbnailUrl = cachedThumbnail;
+                          }
+                        } catch (error) {
+                          console.error("Failed to get thumbnail from localStorage:", error);
+                        }
+                      }
+                      
                       return (
                         <div
                           key={img.id}
@@ -488,13 +547,27 @@ export default function Home(): React.ReactElement {
                             }`}
                           >
                             {isVideoItem ? (
-                              <video
-                                src={getThumbnailUrl(img.url)}
-                                className="w-full h-full object-cover"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
+                              thumbnailUrl ? (
+                                <Image
+                                  src={thumbnailUrl}
+                                  alt="背景メディア"
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <video
+                                  src={getThumbnailUrl(img.url)}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                              )
                             ) : (
                               <Image
                                 src={getThumbnailUrl(img.url)}

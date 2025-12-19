@@ -115,9 +115,51 @@ export async function getCachedBlobUrl(dataUrl: string): Promise<string> {
   }
   
   try {
-    // Data URLをBlobに変換
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
+    // Data URLをパースしてMIMEタイプとデータを取得
+    // 形式: data:[<mediatype>][;base64],<data>
+    // 例: data:video/mp4;base64,xxx または data:video/mp4;codecs=avc1;base64,xxx
+    const dataUrlMatch = dataUrl.match(/^data:([^,]+),(.+)$/);
+    if (!dataUrlMatch) {
+      // base64でない場合や形式が異なる場合はfetchを使用
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // キャッシュに保存（双方向のマッピング）
+      blobUrlCache.set(dataUrl, blobUrl);
+      blobUrlToDataUrlMap.set(blobUrl, dataUrl);
+      
+      return blobUrl;
+    }
+    
+    const mimePart = dataUrlMatch[1];
+    const dataPart = dataUrlMatch[2];
+    
+    // MIMEタイプとbase64フラグを分離
+    const isBase64 = mimePart.includes(";base64");
+    const mimeType = mimePart.split(";")[0]; // 最初の部分がMIMEタイプ
+    
+    if (!isBase64) {
+      // base64でない場合はfetchを使用
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      blobUrlCache.set(dataUrl, blobUrl);
+      blobUrlToDataUrlMap.set(blobUrl, dataUrl);
+      
+      return blobUrl;
+    }
+    
+    // base64データをバイナリに変換
+    const binaryString = atob(dataPart);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // MIMEタイプを明示的に指定してBlobを作成
+    const blob = new Blob([bytes], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
     
     // キャッシュに保存（双方向のマッピング）
@@ -125,7 +167,8 @@ export async function getCachedBlobUrl(dataUrl: string): Promise<string> {
     blobUrlToDataUrlMap.set(blobUrl, dataUrl);
     
     return blobUrl;
-  } catch {
+  } catch (error) {
+    console.error("Failed to convert Data URL to Blob URL:", error);
     // エラー時は元のURLを返す
     return dataUrl;
   }
@@ -269,26 +312,34 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 parsedImages.length > 0
               ) {
                 const imagesArray = parsedImages as BackgroundImage[];
+                let targetUrl: string | null = null;
+                let selectedImg: BackgroundImage | undefined;
+
                 if (settingsWithDefaults.selectedImageUrl &&
                     imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)) {
-                  setCurrentImage(settingsWithDefaults.selectedImageUrl);
+                  targetUrl = settingsWithDefaults.selectedImageUrl;
+                  selectedImg = imagesArray.find((img) => img.url === settingsWithDefaults.selectedImageUrl);
+                } else {
+                  targetUrl = imagesArray[0].url;
+                  selectedImg = imagesArray[0];
+                }
+
+                if (targetUrl) {
+                  // Data URLの場合はBlob URLに変換
+                  if (targetUrl.startsWith("data:")) {
+                    getCachedBlobUrl(targetUrl).then((blobUrl) => {
+                      setCurrentImage(blobUrl);
+                    }).catch(() => {
+                      setCurrentImage(targetUrl);
+                    });
+                  } else {
+                    setCurrentImage(targetUrl);
+                  }
 
                   // サムネイルをlocalStorageにキャッシュ
-                  const selectedImg = imagesArray.find((img) => img.url === settingsWithDefaults.selectedImageUrl);
                   if (selectedImg?.thumbnail) {
                     try {
                       localStorage.setItem(LOCALSTORAGE_KEY_CURRENT_THUMBNAIL, selectedImg.thumbnail);
-                    } catch (error) {
-                      console.error("Failed to cache thumbnail to localStorage:", error);
-                    }
-                  }
-                } else {
-                  setCurrentImage(imagesArray[0].url);
-
-                  // サムネイルをlocalStorageにキャッシュ
-                  if (imagesArray[0].thumbnail) {
-                    try {
-                      localStorage.setItem(LOCALSTORAGE_KEY_CURRENT_THUMBNAIL, imagesArray[0].thumbnail);
                     } catch (error) {
                       console.error("Failed to cache thumbnail to localStorage:", error);
                     }
@@ -305,7 +356,18 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
             parsed.length > 0
           ) {
             const imagesArray = parsed as BackgroundImage[];
-            setCurrentImage(imagesArray[0].url);
+            const targetUrl = imagesArray[0].url;
+
+            // Data URLの場合はBlob URLに変換
+            if (targetUrl.startsWith("data:")) {
+              getCachedBlobUrl(targetUrl).then((blobUrl) => {
+                setCurrentImage(blobUrl);
+              }).catch(() => {
+                setCurrentImage(targetUrl);
+              });
+            } else {
+              setCurrentImage(targetUrl);
+            }
 
             // サムネイルをlocalStorageにキャッシュ
             if (imagesArray[0].thumbnail) {
@@ -332,9 +394,21 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
    * @param {string} thumbnail - サムネイル画像のURL（オプション）
    */
   const addImage = async (url: string, thumbnail?: string): Promise<void> => {
+    // Data URLの場合は事前にBlob URLに変換してキャッシュを作成
+    let finalUrl = url;
+    if (url.startsWith("data:")) {
+      try {
+        finalUrl = await getCachedBlobUrl(url);
+      } catch (error) {
+        console.error("Failed to convert to Blob URL:", error);
+        // エラー時は元のURLを使用
+        finalUrl = url;
+      }
+    }
+
     const newImage: BackgroundImage = {
       id: Date.now().toString(),
-      url,
+      url, // 元のData URLを保存（永続化のため）
       ...(thumbnail && { thumbnail }),
     };
     const updated = [...images, newImage];
@@ -345,8 +419,9 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
       console.error("Failed to save images to IndexedDB:", error);
     }
 
+    // 最初の画像の場合は、Blob URLを表示
     if (images.length === 0) {
-      setCurrentImage(url);
+      setCurrentImage(finalUrl);
     }
   };
 
@@ -363,11 +438,33 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
     } catch (error) {
       console.error("Failed to save images to IndexedDB:", error);
     }
-    
+
     if (updated.length === 0) {
       setCurrentImage(null);
-    } else if (currentImage && !updated.some((img) => img.url === currentImage)) {
-      setCurrentImage(updated[0].url);
+    } else if (currentImage) {
+      // currentImageがBlob URLの場合は元のData URLを取得
+      let searchUrl = currentImage;
+      if (currentImage.startsWith("blob:")) {
+        const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+        if (originalDataUrl) {
+          searchUrl = originalDataUrl;
+        }
+      }
+
+      // 削除された画像が現在の画像の場合は、最初の画像を選択
+      if (!updated.some((img) => img.url === searchUrl)) {
+        const targetUrl = updated[0].url;
+        // Data URLの場合はBlob URLに変換
+        if (targetUrl.startsWith("data:")) {
+          getCachedBlobUrl(targetUrl).then((blobUrl) => {
+            setCurrentImage(blobUrl);
+          }).catch(() => {
+            setCurrentImage(targetUrl);
+          });
+        } else {
+          setCurrentImage(targetUrl);
+        }
+      }
     }
   };
 
@@ -377,7 +474,18 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   const selectRandomImage = useCallback((): void => {
     if (images.length === 0) return;
     const randomIndex = Math.floor(Math.random() * images.length);
-    setCurrentImage(images[randomIndex].url);
+    const targetUrl = images[randomIndex].url;
+
+    // Data URLの場合はBlob URLに変換
+    if (targetUrl.startsWith("data:")) {
+      getCachedBlobUrl(targetUrl).then((blobUrl) => {
+        setCurrentImage(blobUrl);
+      }).catch(() => {
+        setCurrentImage(targetUrl);
+      });
+    } else {
+      setCurrentImage(targetUrl);
+    }
   }, [images]);
 
   /**
@@ -388,9 +496,6 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   const selectImage = async (url: string): Promise<void> => {
     const selectedImageData = images.find((img) => img.url === url);
     if (selectedImageData) {
-      // まず元のURLを設定（即座に表示）
-      setCurrentImage(url);
-
       // サムネイルがある場合はlocalStorageにキャッシュ（次回起動時の高速化）
       if (selectedImageData.thumbnail) {
         try {
@@ -400,16 +505,21 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
         }
       }
 
-      // Data URLの場合はBlob URLに変換してキャッシュ（バックグラウンドで処理）
+      // Data URLの場合はBlob URLに変換（同期的に待機）
+      let displayUrl = url;
       if (url.startsWith("data:")) {
-        getCachedBlobUrl(url).then((blobUrl) => {
-          setCurrentImage(blobUrl);
-        }).catch(() => {
-          // エラー時は元のURLのまま
-        });
+        try {
+          displayUrl = await getCachedBlobUrl(url);
+        } catch (error) {
+          console.error("Failed to convert to Blob URL:", error);
+          // エラー時は元のURLを使用
+        }
       }
 
-      // 選択した画像を設定に保存して永続化
+      // Blob URLを設定（一度だけ設定）
+      setCurrentImage(displayUrl);
+
+      // 選択した画像を設定に保存して永続化（元のData URLを保存）
       const updated = { ...settings, selectedImageUrl: url };
       setSettings(updated);
       try {
