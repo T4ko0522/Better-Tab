@@ -12,7 +12,6 @@ A customizable new tab page that brings together beautiful background images, cl
 - **Video Support**: Use video files as backgrounds
 - **Image Cropping**: Crop uploaded images freely
 - **Auto Rotation**: Automatically rotate multiple background images randomly or by time of day
-- **Overlay Adjustment**: Adjust the transparency of overlays displayed over backgrounds
 
 ### ⏰ Clock & Weather
 - **Real-time Clock**: Display current time in Japan Standard Time (JST)
@@ -20,7 +19,6 @@ A customizable new tab page that brings together beautiful background images, cl
   - Current temperature and weather conditions
   - Future forecasts (up to 3 days ahead)
   - Weather warnings and advisories
-- **Auto Update**: Weather information updates automatically every 10 minutes
 
 ### 📅 Calendar
 - **Monthly Calendar**: Display calendar for the current month
