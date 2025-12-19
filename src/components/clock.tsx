@@ -76,10 +76,79 @@ const weatherCache: {
   promise: null,
 };
 
+/**
+ * localStorageから天気データを取得
+ *
+ * @returns {WeatherData | null} キャッシュされた天気データ、またはnull
+ */
+const getWeatherFromStorage = (): WeatherData | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const cached = localStorage.getItem("weather_cache");
+    if (!cached) {
+      return null;
+    }
+
+    const parsed = JSON.parse(cached) as {
+      data: WeatherData;
+      timestamp: number;
+    };
+
+    // キャッシュの有効期限は1時間（3600000ミリ秒）
+    const CACHE_DURATION = 3600000;
+    const now = Date.now();
+    if (now - parsed.timestamp > CACHE_DURATION) {
+      // キャッシュが期限切れの場合は削除
+      localStorage.removeItem("weather_cache");
+      return null;
+    }
+
+    return parsed.data;
+  } catch {
+    // パースエラーの場合はキャッシュを削除
+    localStorage.removeItem("weather_cache");
+    return null;
+  }
+};
+
+/**
+ * localStorageに天気データを保存
+ *
+ * @param {WeatherData} data - 保存する天気データ
+ */
+const saveWeatherToStorage = (data: WeatherData): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const cacheData = {
+      data,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem("weather_cache", JSON.stringify(cacheData));
+  } catch (error) {
+    console.error("Failed to save weather to localStorage:", error);
+  }
+};
+
 export function Clock(): React.ReactElement {
   const [time, setTime] = useState<string>("00:00:00");
   const [mounted, setMounted] = useState(false);
-  const [weather, setWeather] = useState<WeatherData | null>(weatherCache.data);
+  // localStorageからキャッシュを読み込む
+  const [weather, setWeather] = useState<WeatherData | null>(() => {
+    if (typeof window !== "undefined") {
+      const cached = getWeatherFromStorage();
+      if (cached) {
+        weatherCache.data = cached;
+        return cached;
+      }
+    }
+    return weatherCache.data;
+  });
   const [weatherLoading, setWeatherLoading] = useState(!weatherCache.data && weatherCache.loading);
   const { settings } = useAppSettings();
 
@@ -106,7 +175,16 @@ export function Clock(): React.ReactElement {
      * 天気情報を取得する
      */
     const fetchWeather = async (): Promise<void> => {
-      // 既にキャッシュがある場合はそれを使用
+      // まずlocalStorageからキャッシュを確認
+      const cachedData = getWeatherFromStorage();
+      if (cachedData) {
+        weatherCache.data = cachedData;
+        setWeather(cachedData);
+        setWeatherLoading(false);
+        return;
+      }
+
+      // 既にメモリキャッシュがある場合はそれを使用
       if (weatherCache.data) {
         setWeather(weatherCache.data);
         setWeatherLoading(false);
@@ -154,6 +232,7 @@ export function Clock(): React.ReactElement {
                     ) {
                       const weatherData = data as WeatherData;
                       weatherCache.data = weatherData;
+                      saveWeatherToStorage(weatherData);
                       setWeather(weatherData);
                       resolve(weatherData);
                       return;
@@ -183,6 +262,7 @@ export function Clock(): React.ReactElement {
                     ) {
                       const weatherData = data as WeatherData;
                       weatherCache.data = weatherData;
+                      saveWeatherToStorage(weatherData);
                       setWeather(weatherData);
                       resolve(weatherData);
                       return;
@@ -207,6 +287,7 @@ export function Clock(): React.ReactElement {
               ) {
                 const weatherData = data as WeatherData;
                 weatherCache.data = weatherData;
+                saveWeatherToStorage(weatherData);
                 setWeather(weatherData);
                 return weatherData;
               }
