@@ -17,6 +17,7 @@ import {
 import { useBackgroundImages, getCachedBlobUrl } from "@/hooks/useBackgroundImages";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { Settings, ImagePlus, X, Search, Upload, Github, Twitter } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { fileToDataUrl, generateVideoThumbnail } from "@/lib/image-utils";
 import { ImageCropper } from "@/components/image-cropper";
 import { Clock } from "@/components/clock";
@@ -42,6 +43,7 @@ export default function Home(): React.ReactElement {
   const [thumbnailCache, setThumbnailCache] = useState<Map<string, string>>(new Map());
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   // ページ読み込み時にURLパラメータから検索語を取得
   React.useEffect(() => {
@@ -110,6 +112,8 @@ export default function Home(): React.ReactElement {
     settings: appSettings,
     updateSettings: updateAppSettings,
   } = useAppSettings();
+
+  const [settingsTab, setSettingsTab] = useState("display");
 
 
   /**
@@ -316,6 +320,32 @@ export default function Home(): React.ReactElement {
     setIsVideoLoaded(false);
   }, [currentImage]);
 
+  // バックグラウンド時に動画を停止する
+  React.useEffect(() => {
+    if (!isVideo || !videoRef.current) return;
+
+    /**
+     * ページの可視性が変更されたときの処理
+     */
+    const handleVisibilityChange = (): void => {
+      if (!videoRef.current) return;
+
+      if (document.hidden) {
+        // タブがバックグラウンドになったら動画を一時停止
+        videoRef.current.pause();
+      } else {
+        // タブがフォアグラウンドに戻ったら動画を再生
+        void videoRef.current.play();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isVideo]);
+
   return (
     <div
       className="min-h-screen w-full relative bg-background"
@@ -324,6 +354,7 @@ export default function Home(): React.ReactElement {
       {/* 背景動画 */}
       {currentImage && isVideo && (
         <video
+          ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover z-0"
           src={currentImage}
           autoPlay
@@ -511,18 +542,92 @@ export default function Home(): React.ReactElement {
                 設定
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>設定</DialogTitle>
                 <DialogDescription>
                   各種設定を変更できます
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-6">
-                {/* 背景画像設定 */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3">背景画像</h3>
-                  <div className="space-y-3">
+              <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="display">表示設定</TabsTrigger>
+                  <TabsTrigger value="background">背景画像</TabsTrigger>
+                </TabsList>
+
+                {/* 表示設定タブ */}
+                <TabsContent value="display" className="space-y-6 mt-4">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3">表示設定</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="showWeather"
+                          checked={appSettings.showWeather}
+                          onChange={(e) =>
+                            updateAppSettings({ showWeather: e.target.checked })
+                          }
+                          className="size-4"
+                        />
+                        <label htmlFor="showWeather" className="text-sm">
+                          天気を表示
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="showWeatherLocation"
+                          checked={appSettings.showWeatherLocation}
+                          onChange={(e) =>
+                            updateAppSettings({ showWeatherLocation: e.target.checked })
+                          }
+                          disabled={!appSettings.showWeather}
+                          className="size-4"
+                        />
+                        <label htmlFor="showWeatherLocation" className="text-sm">
+                          天気の市町村名を表示
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="showCalendar"
+                          checked={appSettings.showCalendar}
+                          onChange={(e) =>
+                            updateAppSettings({ showCalendar: e.target.checked })
+                          }
+                          className="size-4"
+                        />
+                        <label htmlFor="showCalendar" className="text-sm">
+                          カレンダーを表示
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="showTrendingArticles"
+                          checked={appSettings.showTrendingArticles}
+                          onChange={(e) =>
+                            updateAppSettings({
+                              showTrendingArticles: e.target.checked,
+                            })
+                          }
+                          className="size-4"
+                        />
+                        <label htmlFor="showTrendingArticles" className="text-sm">
+                          トレンド記事を表示
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* 背景画像設定タブ */}
+                <TabsContent value="background" className="space-y-6 mt-4">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3">背景画像</h3>
+                    <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -589,76 +694,11 @@ export default function Home(): React.ReactElement {
                         背景画像の上にオーバーレイを表示
                       </label>
                     </div>
-                  </div>
-                </div>
-
-                {/* 表示設定 */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3">表示設定</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="showWeather"
-                        checked={appSettings.showWeather}
-                        onChange={(e) =>
-                          updateAppSettings({ showWeather: e.target.checked })
-                        }
-                        className="size-4"
-                      />
-                      <label htmlFor="showWeather" className="text-sm">
-                        天気を表示
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="showWeatherLocation"
-                        checked={appSettings.showWeatherLocation}
-                        onChange={(e) =>
-                          updateAppSettings({ showWeatherLocation: e.target.checked })
-                        }
-                        disabled={!appSettings.showWeather}
-                        className="size-4"
-                      />
-                      <label htmlFor="showWeatherLocation" className="text-sm">
-                        天気の市町村名を表示
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="showCalendar"
-                        checked={appSettings.showCalendar}
-                        onChange={(e) =>
-                          updateAppSettings({ showCalendar: e.target.checked })
-                        }
-                        className="size-4"
-                      />
-                      <label htmlFor="showCalendar" className="text-sm">
-                        カレンダーを表示
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="showTrendingArticles"
-                        checked={appSettings.showTrendingArticles}
-                        onChange={(e) =>
-                          updateAppSettings({
-                            showTrendingArticles: e.target.checked,
-                          })
-                        }
-                        className="size-4"
-                      />
-                      <label htmlFor="showTrendingArticles" className="text-sm">
-                        トレンド記事を表示
-                      </label>
                     </div>
                   </div>
-                </div>
-              </div>
-              <DialogFooter className="flex justify-between items-center pt-4 border-t border-border">
+                </TabsContent>
+              </Tabs>
+              <DialogFooter className="flex flex-row justify-between items-center pt-4 border-t border-border sm:justify-between">
                 <span className="text-sm text-foreground">製作者 T4ko0522</span>
                 <div className="flex items-center gap-4">
                   <a
@@ -746,7 +786,7 @@ export default function Home(): React.ReactElement {
 
           {/* スマホ: トレンド記事（中央揃え） */}
           {appSettings.showTrendingArticles && (
-            <div className="md:hidden w-full max-w-2xl">
+            <div className="md:hidden w-full max-w-2xl mb-6">
               <TrendingArticles />
             </div>
           )}
