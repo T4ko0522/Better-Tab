@@ -711,13 +711,13 @@ export default function Home(): React.ReactElement {
         </header>
 
         {/* メインコンテンツエリア */}
-        <main className="flex-1 flex flex-col items-center px-6 py-12 md:justify-center">
+        <main className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 sm:py-12 md:justify-center">
           {/* 検索ボックス */}
-          <form onSubmit={handleSearch} id="search-form" className="w-full max-w-2xl mb-8">
+          <form onSubmit={handleSearch} id="search-form" className="w-full max-w-2xl mb-6 sm:mb-8">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search 
-                  className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground z-10 cursor-pointer" 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 size-4 sm:size-5 text-muted-foreground z-10 cursor-pointer" 
                   onClick={() => {
                     const form = document.getElementById("search-form") as HTMLFormElement;
                     if (form) {
@@ -731,7 +731,7 @@ export default function Home(): React.ReactElement {
                   placeholder="検索またはドメイン..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-black/30 backdrop-blur-sm relative z-0 text-white placeholder:text-white"
+                  className="pl-9 sm:pl-10 text-sm sm:text-base bg-black/30 backdrop-blur-sm relative z-0 text-white placeholder:text-white"
                 />
               </div>
             </div>
