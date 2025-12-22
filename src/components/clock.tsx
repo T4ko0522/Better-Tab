@@ -218,6 +218,13 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
      * 天気情報を取得する
      */
     const fetchWeather = async (): Promise<void> => {
+      // 天気を表示しない場合は何もしない（位置情報も要求しない）
+      if (hideWeather || !settings.showWeather) {
+        setWeather(null);
+        setWeatherLoading(false);
+        return;
+      }
+
       // まずlocalStorageからキャッシュを確認
       const cachedData = getWeatherFromStorage();
       if (cachedData) {
@@ -368,7 +375,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
       clearInterval(interval);
       clearInterval(weatherInterval);
     };
-  }, []);
+  }, [hideWeather, settings.showWeather]);
 
   if (!mounted) {
     return (
