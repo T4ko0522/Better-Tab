@@ -548,15 +548,44 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   };
 
   // 画像変更間隔のタイマー（changeByTimeがtrueの場合のみ）
+  // 動画の場合は自動切り替えを行わない
   useEffect(() => {
     if (!settings.changeByTime || !settings.shuffle || images.length <= 1 || !settings.changeInterval) return;
+
+    // 現在の背景が動画かどうかをチェック
+    if (currentImage) {
+      // Blob URLの場合は元のData URLを取得
+      let urlToCheck = currentImage;
+      if (currentImage.startsWith("blob:")) {
+        const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
+        if (originalDataUrl) {
+          urlToCheck = originalDataUrl;
+        }
+      }
+      
+      // 動画の場合は自動切り替えしない
+      if (urlToCheck.startsWith("data:video/")) {
+        return;
+      }
+      
+      // URLの場合も動画形式かチェック
+      try {
+        const urlObj = new URL(urlToCheck);
+        const pathname = urlObj.pathname.toLowerCase();
+        if (/\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(pathname)) {
+          return;
+        }
+      } catch {
+        // URLとして解析できない場合は続行
+      }
+    }
 
     const interval = setInterval(() => {
       selectRandomImage();
     }, settings.changeInterval * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [settings.changeByTime, settings.shuffle, settings.changeInterval, images.length, selectRandomImage]);
+  }, [settings.changeByTime, settings.shuffle, settings.changeInterval, images.length, selectRandomImage, currentImage]);
 
   return {
     images,
