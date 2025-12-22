@@ -429,6 +429,7 @@ export default function Home(): React.ReactElement {
           settingsTab={settingsTab}
           setSettingsTab={setSettingsTab}
           handleOpenSettings={handleOpenSettings}
+          isCurrentMediaVideo={isVideo}
         />
 
         {/* メインコンテンツエリア */}

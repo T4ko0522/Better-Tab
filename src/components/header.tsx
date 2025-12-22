@@ -73,6 +73,8 @@ interface HeaderProps {
   setSettingsTab: (tab: string) => void;
   /** 設定を開いた時のハンドラー */
   handleOpenSettings: () => void;
+  /** 現在のメディアが動画かどうか */
+  isCurrentMediaVideo: boolean;
 }
 
 /**
@@ -109,6 +111,7 @@ export const Header = ({
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
+  isCurrentMediaVideo,
 }: HeaderProps): React.ReactElement => {
   return (
     <header className="flex justify-center md:justify-end items-start p-6 gap-4">
@@ -142,6 +145,7 @@ export const Header = ({
         settingsTab={settingsTab}
         setSettingsTab={setSettingsTab}
         handleOpenSettings={handleOpenSettings}
+        isCurrentMediaVideo={isCurrentMediaVideo}
       />
 
       <Button

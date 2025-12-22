@@ -63,6 +63,8 @@ interface SettingsModalProps {
   setSettingsTab: (tab: string) => void;
   /** 設定を開いた時のハンドラー */
   handleOpenSettings: () => void;
+  /** 現在のメディアが動画かどうか */
+  isCurrentMediaVideo: boolean;
 }
 
 /**
@@ -87,6 +89,7 @@ export const SettingsModal = ({
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
+  isCurrentMediaVideo,
 }: SettingsModalProps): React.ReactElement => {
   return (
     <Dialog>
@@ -212,6 +215,11 @@ export const SettingsModal = ({
           <TabsContent value="background" className="space-y-6 mt-4">
             <div>
               <h3 className="text-sm font-semibold mb-3">背景画像</h3>
+              {isCurrentMediaVideo && (
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                  ※ 現在の背景は動画のため、これらの設定は画像選択時のみ有効です。
+                </p>
+              )}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <input
@@ -223,9 +231,10 @@ export const SettingsModal = ({
                       setSettingsChangeByTime(value);
                       updateSettings({ changeByTime: value });
                     }}
+                    disabled={isCurrentMediaVideo}
                     className="size-4"
                   />
-                  <label htmlFor="changeByTime" className="text-sm">
+                  <label htmlFor="changeByTime" className={`text-sm ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
                     画像を時間で変更する
                   </label>
                 </div>
@@ -239,14 +248,15 @@ export const SettingsModal = ({
                       setSettingsShuffle(value);
                       updateSettings({ shuffle: value });
                     }}
+                    disabled={isCurrentMediaVideo}
                     className="size-4"
                   />
-                  <label htmlFor="shuffle" className="text-sm">
+                  <label htmlFor="shuffle" className={`text-sm ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
                     ランダムにシャッフル
                   </label>
                 </div>
                 <div>
-                  <label htmlFor="interval" className="text-sm block mb-2">
+                  <label htmlFor="interval" className={`text-sm block mb-2 ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
                     画像変更間隔（分）
                   </label>
                   <Input
@@ -259,7 +269,7 @@ export const SettingsModal = ({
                       setSettingsInterval(value);
                       updateSettings({ changeInterval: value });
                     }}
-                    disabled={!settingsChangeByTime}
+                    disabled={isCurrentMediaVideo || !settingsChangeByTime}
                   />
                 </div>
                 <div className="flex items-center gap-2">
