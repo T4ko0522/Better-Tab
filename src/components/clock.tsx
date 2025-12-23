@@ -5,6 +5,7 @@ import type React from "react";
 import { Sun, Moon } from "lucide-react";
 import Image from "next/image";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { fetchWeather as fetchWeatherFromAPI } from "@/lib/extension-api";
 
 /**
  * 天気情報の型定義
@@ -261,15 +262,21 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
       
       const fetchPromise = (async (): Promise<WeatherData | null> => {
         try {
+          // デフォルト（Vercelデプロイ時）は相対パス、静的エクスポート時（.env.localにtrueを記述）は外部URLを使用
+          const useExternalApi = process.env.NEXT_PUBLIC_USE_RELATIVE_API === "true";
+          
           // 位置情報を取得
           if (navigator.geolocation) {
             return new Promise<WeatherData | null>((resolve) => {
               navigator.geolocation.getCurrentPosition(
                 async (position) => {
                   const { latitude, longitude } = position.coords;
-                  const response = await fetch(
-                    `/api/weather?lat=${latitude}&lon=${longitude}`
-                  );
+                  const response = useExternalApi
+                    ? await fetchWeatherFromAPI(
+                        latitude.toString(),
+                        longitude.toString()
+                      )
+                    : await fetch(`/api/weather?lat=${latitude}&lon=${longitude}`);
                   if (response.ok) {
                     const data: unknown = await response.json();
                     if (
@@ -299,7 +306,9 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                     return;
                   }
                   // その他のエラーの場合はデフォルト（東京）で取得
-                  const response = await fetch("/api/weather");
+                  const response = useExternalApi
+                    ? await fetchWeatherFromAPI()
+                    : await fetch("/api/weather");
                   if (response.ok) {
                     const data: unknown = await response.json();
                     if (
@@ -324,7 +333,9 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
             });
           } else {
             // 位置情報APIが利用できない場合はデフォルト（東京）で取得
-            const response = await fetch("/api/weather");
+            const response = useExternalApi
+              ? await fetchWeatherFromAPI()
+              : await fetch("/api/weather");
             if (response.ok) {
               const data: unknown = await response.json();
               if (

@@ -1,12 +1,12 @@
 /**
  * APIクライアント
- * VercelにデプロイされたNext.js APIルートを呼び出す
+ * 通常ビルド時（Next.jsサーバー）用の外部URL呼び出し
  */
 
 const API_BASE_URL = "https://better-tab.vercel.app";
 
 /**
- * 天気情報を取得
+ * 天気情報を取得（通常ビルド時用）
  *
  * @param {string} lat - 緯度
  * @param {string} lon - 経度
@@ -24,7 +24,7 @@ export async function fetchWeather(
 }
 
 /**
- * 祝日情報を取得
+ * 祝日情報を取得（通常ビルド時用）
  *
  * @param {string} year - 年
  * @returns {Promise<Response>} レスポンス
@@ -37,7 +37,7 @@ export async function fetchHolidays(year?: string): Promise<Response> {
 }
 
 /**
- * トレンド記事を取得
+ * トレンド記事を取得（通常ビルド時用）
  *
  * @returns {Promise<Response>} レスポンス
  */

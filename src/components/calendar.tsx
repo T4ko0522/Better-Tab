@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { fetchHolidays as fetchHolidaysFromAPI } from "@/lib/extension-api";
 
 /**
  * 祝日データの型定義
@@ -155,8 +156,11 @@ export function Calendar({ isMobile = false }: CalendarProps): React.ReactElemen
       
       const fetchPromise = (async (): Promise<Holidays> => {
         try {
-          // 現在の年の祝日を取得
-          const response = await fetch(`/api/holidays?year=${year}`);
+          // デフォルト（Vercelデプロイ時）は相対パス、静的エクスポート時（.env.localにtrueを記述）は外部URLを使用
+          const useExternalApi = process.env.NEXT_PUBLIC_USE_RELATIVE_API === "true";
+          const response = useExternalApi
+            ? await fetchHolidaysFromAPI(year.toString())
+            : await fetch(`/api/holidays?year=${year}`);
           if (response.ok) {
             const data: unknown = await response.json();
             if (
