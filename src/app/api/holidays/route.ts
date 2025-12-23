@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 
 /**
- * 静的エクスポート用の設定
- */
-export const dynamic = "force-static";
-
-/**
  * GET リクエストハンドラー
  * holidays-jp.github.io APIから祝日情報を取得して返す
  *
