@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
 /**
+ * 静的エクスポート用の設定
+ */
+export const dynamic = "force-static";
+
+/**
  * 天気情報の型定義
  */
 export interface WeatherData {

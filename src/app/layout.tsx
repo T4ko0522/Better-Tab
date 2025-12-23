@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
 
@@ -32,7 +31,6 @@ export default function RootLayout({
         <AppSettingsProvider>
           {children}
         </AppSettingsProvider>
-        <Analytics />
       </body>
     </html>
   );

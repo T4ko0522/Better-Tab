@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type React from "react";
 import Image from "next/image";
 import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
+import { fetchTrending } from "@/lib/extension-api";
 
 /**
  * トレンド記事の型定義
@@ -104,7 +105,11 @@ export function TrendingArticles(): React.ReactElement {
       
       const fetchPromise = (async (): Promise<TrendingArticle[]> => {
         try {
-          const response = await fetch("/api/trending");
+          // デフォルト（Vercelデプロイ時）は相対パス、静的エクスポート時（.env.localにtrueを記述）は外部URLを使用
+          const useExternalApi = process.env.NEXT_PUBLIC_USE_RELATIVE_API === "true";
+          const response = useExternalApi
+            ? await fetchTrending()
+            : await fetch("/api/trending");
           if (response.ok) {
             const data: unknown = await response.json();
             if (Array.isArray(data)) {
@@ -178,7 +183,7 @@ export function TrendingArticles(): React.ReactElement {
   return (
     <div
       className={`md:fixed md:bottom-6 md:right-6 w-full md:w-80 bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-border z-20 overflow-y-auto scrollbar-hide ${
-        expanded ? "max-h-[600px]" : "max-h-96"
+        expanded ? "max-h-[500px]" : "max-h-96"
       }`}
     >
       <button

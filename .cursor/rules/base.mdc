@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+
+- **Keep responses concise and purposeful.**  
+  Only provide information or code that directly helps solve the request.
+
+- **Do not add filler or fluff.**  
+  Avoid phrases like _“You’re absolutely right”_, motivational comments, or unnecessary small talk.
+
+- **Code comments must be functional, not decorative.**  
+  Include comments only when they clarify logic, mark assumptions, or explain non-obvious choices. No redundant “this line does X” comments.
+
+- **End responses with precision.**  
+  If a closing note is needed, use short bullet points to summarize critical outcomes, decisions, or next steps—no long narrative recaps.
+
+- **Stay task-focused.**  
+  Do not drift into explanations or elaborations unless directly requested.
+
+# Git
+
+- Before performing any complex or dangerous git operations (e.g., hard reset), create a backup.
+
+# Language
+
+- **All conversations must be conducted in Japanese.**
+
+# TypeScript / JavaScript
+
+- **Always write type definitions, return types, and JSDoc.**
+- **Do not use static classes.**
+- **Do not use dynamic imports.**
+
+# Commit
+
+- **Keep commit messages concise.**
+
+# Markdown
+
+- **Only write Markdown documents when explicitly requested.**
