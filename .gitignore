@@ -21,6 +21,8 @@
 /build
 /dist
 /extension
+/build_scripts/dist
+/build_scripts/extension
 
 # misc
 .DS_Store
