@@ -1,89 +1,35 @@
-# <img src="assets/icon.png" alt="Better Tab" width="32" height="32" style="vertical-align: middle; margin-right: 8px;" /> Better Tab
-
-カスタマイズ可能な新しいタブページ。時計、天気、カレンダー、トレンド記事を一つのページに集約した、モダンで使いやすい新しいタブ用のページです。
+<div align="center">
+  <img src="assets/icon.png" alt="Better Tab" width="256" height="256" />
+  <h1>Better Tab</h1>
+  <p>
+    カスタマイズ可能な新しいタブページ。<br />
+    時計、天気、カレンダー、トレンド記事を一つのページに集約した、<br />
+    モダンで使いやすい新しいタブ用のページです。
+  </p>
+</div>
 
 ![Better Tab Screenshot](assets/screen.png)
 
-## ✨ 主な機能
+## 使用方法
 
-### 🎨 背景のカスタマイズ
-- **画像アップロード**: ローカルファイルから背景画像をアップロード
-- **URL指定**: 画像URLを直接指定して背景を設定
-- **動画対応**: 動画ファイルも背景として使用可能
-- **画像クロップ**: アップロードした画像を自由にクロップ
-- **自動切り替え**: 複数の背景画像をランダムまたは時間帯に応じて自動切り替え
+#### 拡張機能
+1. Releaseからzipをダウンロードする
+2. ダウンロードしたzipを展開する
+3. chrome://extensions/ を開く
+4. デベロッパーモードを有効にする
+5. パッケージ化されていない拡張機能を読み込むを押す
+6. 先ほどの展開したzipの中のextensionを選択
 
-### ⏰ 時計と天気
-- **リアルタイム時計**: 日本時間（JST）で現在時刻を表示
-- **天気情報**: 位置情報に基づいた天気予報（気象庁API）
-  - 現在の気温と天気
-  - 今後の予報（最大3日先）
-  - 警報・注意報の表示
+![説明](assets/説明.png)
 
-### 📅 カレンダー
-- **月間カレンダー**: 現在の月のカレンダーを表示
-- **祝日表示**: 日本の祝日を自動的に表示
-- **今日のハイライト**: 今日の日付を強調表示
+#### もしくは
+1. [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja&utm_source=ext_sidebar) 拡張機能をインストール
+2. Custom New Tabの設定を開く
+3. urlをペーストしてセーブ
 
-### 📰 トレンド記事
-- **Qiitaトレンド**: Qiitaの人気記事を表示
-- **記事タグ**: 各記事のタグを表示
-- **外部リンク**: 記事をクリックして新しいタブで開く
+![custom-new-tab](assets/custom-new-tab.png)
 
-### 🔍 検索機能
-- **クイック検索**: 検索バーから直接検索
-- **URLパラメータ対応**: `?q=検索語` で検索語を指定可能
-
-### ⚙️ 設定
-- **表示/非表示**: 各ウィジェット（天気、カレンダー、トレンド記事）の表示を切り替え
-- **フォントカラー**: テキストの色を白または黒に変更
-- **データ永続化**: IndexedDBを使用して設定と背景画像を保存
-
-## 🎯 使用方法
-
-### 📌 セットアップ
-
-このページをブラウザの新しいタブページとして設定する方法：
-
-#### Brave
-1. このアプリケーションをデプロイしたURLを開く
-2. ブラウザの設定を開く（`brave://settings/?search=%E3%82%BF%E3%83%96`）
-3. 「外観」セクションを開く
-4. 「新しいタブページ」の設定を変更
-5. 「カスタムWebページ」を選択し、このアプリケーションのURLを入力
-
-**注意**: Braveでは拡張機能なしで新しいタブページをカスタマイズできます。
-
-#### Chrome
-Chromeでは拡張機能が必須です。以下の手順で設定してください：
-
-1. [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja&utm_source=ext_sidebar) などの拡張機能をインストール
-2. 拡張機能の設定を開く
-3. このアプリケーションのURLを指定
-
-#### Edge
-1. このアプリケーションをデプロイしたURLを開く
-2. ブラウザの設定を開く（`edge://settings/`）
-3. 「外観」または「スタートアップ」セクションを開く
-4. 「新しいタブページ」の設定を変更
-5. 「カスタムWebページ」を選択し、このアプリケーションのURLを入力
-
-または、拡張機能を使用する場合：
-- [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja&utm_source=ext_sidebar) などの拡張機能をインストール
-- 拡張機能の設定で、このアプリケーションのURLを指定
-
-#### Firefox
-1. このアプリケーションをデプロイしたURLを開く
-2. ブラウザの設定を開く（`about:preferences`）
-3. 「ホーム」セクションを開く
-4. 「新しいウィンドウとタブ」で「カスタムURL」を選択
-5. このアプリケーションのURLを入力
-
-または、拡張機能を使用する場合：
-- [New Tab Override](https://addons.mozilla.org/ja/firefox/addon/new-tab-override/) などの拡張機能をインストール
-- 拡張機能の設定で、このアプリケーションのURLを指定
-
-### 💡 機能の使い方
+### 機能の使い方
 1. **背景画像の設定**
    - 設定アイコンをクリック
    - 「背景」タブを選択
