@@ -1,112 +1,50 @@
-# <img src="assets/icon.png" alt="Better Tab" width="32" height="32" style="vertical-align: middle; margin-right: 8px;" /> Better Tab
-
-A customizable new tab page that brings together beautiful background images, clock, weather, calendar, and trending articles in one modern, user-friendly homepage.
+<div align="center">
+<img src="assets/icon.png" alt="Better Tab" width="256" height="256" />
+<h1>Better Tab</h1>
+<p>
+Customizable new tab page. <br />
+A modern and easy-to-use new tab page that combines a clock, weather, calendar, and trending articles into one page.
+</p>
+</div>
 
 ![Better Tab Screenshot](assets/screen.png)
 
-## ✨ Features
+## How to Use
 
-### 🎨 Background Customization
-- **Image Upload**: Upload background images from local files
-- **URL Input**: Set background by directly specifying image URLs
-- **Video Support**: Use video files as backgrounds
-- **Image Cropping**: Crop uploaded images freely
-- **Auto Rotation**: Automatically rotate multiple background images randomly or by time of day
+#### Extension
+1. Download the zip file from Release
+2. Extract the downloaded zip file
+3. Open chrome://extensions/
+4. Enable Developer Mode
+5. Click Load Unpacked Extension
+6. Select the extension from the extracted zip file
 
-### ⏰ Clock & Weather
-- **Real-time Clock**: Display current time in Japan Standard Time (JST)
-- **Weather Information**: Weather forecasts based on location (Japan Meteorological Agency API)
-  - Current temperature and weather conditions
-  - Future forecasts (up to 3 days ahead)
-  - Weather warnings and advisories
+![Description](assets/Description.png)
 
-### 📅 Calendar
-- **Monthly Calendar**: Display calendar for the current month
-- **Holiday Display**: Automatically show Japanese holidays
-- **Today Highlight**: Highlight today's date
+#### Or
+1. Install the [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja&utm_source=ext_sidebar) extension
+2. Open Custom New Tab Settings
+3. Paste the URL and save it
 
-### 📰 Trending Articles
-- **Qiita Trends**: Display popular articles from Qiita
-- **Article Tags**: Show tags for each article
-- **External Links**: Click articles to open in a new tab
+![custom-new-tab](assets/custom-new-tab.png)
 
-### 🔍 Search Functionality
-- **Quick Search**: Search directly from the search bar
-- **URL Parameter Support**: Specify search terms with `?q=search term`
-
-### ⚙️ Settings
-- **Show/Hide**: Toggle visibility of each widget (weather, calendar, trending articles)
-- **Font Color**: Change text color to white or black
-- **Data Persistence**: Save settings and background images using IndexedDB
-
-## 🎯 Usage
-
-### 📌 Setup
-
-How to set this page as your browser's new tab page:
-
-#### Brave
-1. Open the URL where this application is deployed
-2. Open browser settings (`brave://settings/?search=tab`)
-3. Open the "Appearance" section
-4. Change the "New tab page" setting
-5. Select "Custom web page" and enter this application's URL
-
-**Note**: Brave allows you to customize the new tab page without extensions.
-
-#### Chrome
-Chrome requires an extension. Follow these steps:
-
-1. Install an extension like [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja)
-2. Open the extension settings
-3. Configure it to use this application's URL
-
-#### Edge
-1. Open the URL where this application is deployed
-2. Open browser settings (`edge://settings/`)
-3. Open the "Appearance" or "Startup" section
-4. Change the "New tab page" setting
-5. Select "Custom web page" and enter this application's URL
-
-Alternatively, using an extension:
-- Install an extension like [Custom New Tab](https://chromewebstore.google.com/detail/custom-new-tab/lfjnnkckddkopjfgmbcpdiolnmfobflj?hl=ja)
-- Configure the extension to use this application's URL
-
-#### Firefox
-1. Open the URL where this application is deployed
-2. Open browser settings (`about:preferences`)
-3. Open the "Home" section
-4. Select "Custom URL" for "New windows and tabs"
-5. Enter this application's URL
-
-Alternatively, using an extension:
-- Install an extension like [New Tab Override](https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/)
-- Configure the extension to use this application's URL
-
-#### Safari
-1. Open Safari settings
-2. Select the "General" tab
-3. Select "Homepage" for "New windows open with"
-4. Enter this application's URL
-
-### 💡 How to Use Features
-
-1. **Setting Background Images**
-   - Click the settings icon
-   - Select the "Background" tab
-   - Upload an image or enter a URL
-   - Crop the image if necessary
+### How to Use
+1. **Setting the Background Image**
+- Click the Settings icon
+- Select the "Background" tab
+- Upload an image or enter a URL
+- Crop the image as needed
 
 2. **Show/Hide Widgets**
-   - Click the settings icon
-   - Select the "Display Settings" tab
-   - Toggle visibility of each widget
+- Click the Settings icon
+- Select the "Display Settings" tab
+- Toggle the visibility of each widget
 
 3. **Search**
-   - Enter search terms in the search bar at the center of the page
-   - Press Enter or click the search button
+- Enter a search term in the search bar in the center of the page
+- Press Enter or click the search button
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
 - **Framework**: [Next.js](https://nextjs.org/) 16
 - **UI Library**: [React](https://react.dev/) 19
@@ -114,55 +52,54 @@ Alternatively, using an extension:
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) 4
 - **UI Components**: [Radix UI](https://www.radix-ui.com/)
 - **Data Storage**: IndexedDB
-- **Font**: [Geist](https://vercel.com/font)
+- **Fonts**: [Geist](https://vercel.com/font)
 
-## 📦 Key Dependencies
+## 📦 Major Dependencies
 
-- `next`: Next.js framework
-- `react` / `react-dom`: React library
-- `@radix-ui/react-dialog`: Dialog component
-- `@radix-ui/react-slot`: Slot component
-- `lucide-react`: Icon library
-- `next-themes`: Theme management
-- `react-easy-crop`: Image cropping functionality
-- `tailwindcss`: CSS framework
+- `next`: Next.js Framework
+- `react` / `react-dom`: React Library
+- `@radix-ui/react-dialog`: Dialog Component
+- `@radix-ui/react-slot`: Slot Component
+- `lucide-react`: Icon Library
+- `next-themes`: Theme Management
+- `react-easy-crop`: Image Cropping Function
+- `tailwindcss`: CSS Framework
 
-## 🌐 APIs
+## 🌐 API
 
 This project uses the following APIs:
 
-- **Japan Meteorological Agency API**: Weather forecasts and warnings/advisories
-- **OpenStreetMap Nominatim API**: Get city names from location data
-- **holidays-jp.github.io API**: Japanese holiday information
-- **Qiita API**: Trending articles
+- **Japan Meteorological Agency API**: Weather Forecasts and Warnings/Advisories
+- **OpenStreetMap Nominatim API**: Get City Names from Location Information
+- **holidays-jp.github.io API**: Japanese Holiday Information
+- **Qiita API**: Trending Articles
 
 ## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/          # API routes
-│   │   ├── weather/  # Weather information API
-│   │   ├── holidays/ # Holiday information API
-│   │   └── trending/ # Trending articles API
-│   ├── layout.tsx    # Root layout
-│   ├── page.tsx      # Home page
-│   └── globals.css   # Global styles
-├── components/       # React components
-│   ├── calendar.tsx  # Calendar component
-│   ├── clock.tsx     # Clock component
-│   ├── trending-articles.tsx # Trending articles component
-│   └── ui/           # UI components
-├── hooks/            # Custom hooks
-│   ├── useAppSettings.ts    # App settings management
-│   └── useBackgroundImages.ts # Background image management
-└── lib/              # Utilities
-    ├── indexeddb-utils.ts   # IndexedDB operations
-    ├── image-utils.ts        # Image processing
-    └── utils.ts              # General utilities
+│ ├── api/ # API Root
+│ │ ├── weather/ # Weather Information API
+│ │ ├── holidays/ # Holiday Information API
+│ │ └── trending/ # Trending Articles API
+│ ├── layout.tsx # Root Layout
+│ ├── page.tsx # Home Page
+│ └── globals.css # Global Styles
+├── components/ # React Components
+│ ├── calendar.tsx # Calendar Component
+│ ├── clock.tsx # Clock Component
+│ ├── trending-articles.tsx # Trending Articles Component
+│ └── ui/ # UI Components
+├── hooks/ # Custom Hooks
+│ ├── useAppSettings.ts # App Settings Management
+│ └── useBackgroundImages.ts # Background Image Management
+└── lib/ # Utilities
+├── indexeddb-utils.ts # IndexedDB Operations
+├── image-utils.ts # Image Processing
+└── utils.ts # General Utilities
 ```
 
 ## 📝 License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
-
+This project is released under the [Apache License 2.0](LICENSE).
