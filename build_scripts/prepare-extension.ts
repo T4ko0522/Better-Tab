@@ -162,7 +162,7 @@ function extractInlineScriptsFromDir(dir: string): void {
 
 console.log("拡張機能用のファイルを準備中...");
 
-const distDir = path.join(__dirname, "../../dist");
+const outDir = path.join(__dirname, "../../out");
 const extensionDir = path.join(__dirname, "../extension");
 
 // extensionディレクトリをクリーンアップ
@@ -173,10 +173,10 @@ if (fs.existsSync(extensionDir)) {
 // extensionディレクトリを作成
 fs.mkdirSync(extensionDir, { recursive: true });
 
-// distディレクトリからファイルをコピー
-if (fs.existsSync(distDir)) {
+// outディレクトリからファイルをコピー
+if (fs.existsSync(outDir)) {
   console.log("ビルド成果物をコピー中...");
-  copyDir(distDir, extensionDir);
+  copyDir(outDir, extensionDir);
   
   // HTMLファイルとJavaScriptファイル内の/_next/を/next/に置換
   console.log("パスを修正中...");
@@ -187,7 +187,7 @@ if (fs.existsSync(distDir)) {
   extractInlineScriptsFromDir(extensionDir);
 } else {
   console.error(
-    "distディレクトリが見つかりません。先にbuildを実行してください。"
+    "outディレクトリが見つかりません。先にbuildを実行してください。"
   );
   process.exit(1);
 }
