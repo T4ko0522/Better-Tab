@@ -62,6 +62,23 @@ const ZennIcon = (): React.ReactElement => (
 );
 
 /**
+ * 日付文字列を「M月D日」形式にフォーマットする
+ *
+ * @param {string} dateString - 日付文字列
+ * @returns {string} フォーマットされた日付文字列
+ */
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}月${day}日`;
+  } catch {
+    return "";
+  }
+};
+
+/**
  * トレンド記事を表示するコンポーネント
  *
  * @param {object} props - コンポーネントのプロップス
@@ -224,9 +241,16 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
               <div className="mt-0.5 shrink-0 text-foreground">
                 {article.source === "qiita" ? <QiitaIcon /> : <ZennIcon />}
               </div>
-              <h4 className="text-sm font-medium text-foreground group-hover:text-primary line-clamp-2 flex-1">
-                {article.title}
-              </h4>
+              <div className="flex-1 min-w-0">
+                {article.createdAt && (
+                  <p className="text-xs mb-1 text-white">
+                    {formatDate(article.createdAt)}
+                  </p>
+                )}
+                <h4 className="text-sm font-medium text-foreground group-hover:text-primary line-clamp-2">
+                  {article.title}
+                </h4>
+              </div>
               <ExternalLink className="size-4 shrink-0 text-muted-foreground mt-0.5" />
             </div>
             {article.tags.length > 0 && (
