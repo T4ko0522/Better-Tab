@@ -482,7 +482,7 @@ export default function Home(): React.ReactElement {
           {/* スマホ: トレンド記事（中央揃え） */}
           {appSettings.showTrendingArticles && (
             <div className="md:hidden w-full px-4 mb-6 flex justify-center">
-              <TrendingArticles />
+              <TrendingArticles isLightBackground={isLightBackground} />
             </div>
           )}
         </main>
@@ -491,7 +491,7 @@ export default function Home(): React.ReactElement {
       {/* デスクトップ: トレンド記事（右下） */}
       {appSettings.showTrendingArticles && (
         <div className="hidden md:block absolute bottom-6 right-6 z-20">
-          <TrendingArticles />
+          <TrendingArticles isLightBackground={isLightBackground} />
         </div>
       )}
 

@@ -64,9 +64,11 @@ const ZennIcon = (): React.ReactElement => (
 /**
  * トレンド記事を表示するコンポーネント
  *
+ * @param {object} props - コンポーネントのプロップス
+ * @param {boolean} props.isLightBackground - 背景が明るいかどうか
  * @returns {React.ReactElement} トレンド記事コンポーネント
  */
-export function TrendingArticles(): React.ReactElement {
+export function TrendingArticles({ isLightBackground = false }: { isLightBackground?: boolean }): React.ReactElement {
   const [articles, setArticles] = useState<TrendingArticle[]>(articlesCache.data);
   const [loading, setLoading] = useState(!articlesCache.data.length && articlesCache.loading);
   const [mounted, setMounted] = useState(false);
@@ -192,7 +194,9 @@ export function TrendingArticles(): React.ReactElement {
       >
         <h3 className="text-lg font-semibold text-foreground">トレンド記事</h3>
         {hasMore && (
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className={`flex items-center gap-1 ${
+            isLightBackground ? "text-gray-600" : "text-white/80"
+          }`}>
             {expanded ? (
               <>
                 <span className="text-xs">折りたたむ</span>
