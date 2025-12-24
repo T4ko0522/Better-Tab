@@ -29,6 +29,8 @@ interface AppSettings {
   showTrendingArticles: boolean;
   /** 検索エンジン */
   searchEngine: SearchEngine;
+  /** アナログ時計を表示するか */
+  showAnalogClock: boolean;
 }
 
 /**
@@ -192,6 +194,22 @@ export const SettingsModal = ({
                   />
                   <label htmlFor="showTrendingArticles" className="text-sm">
                     トレンド記事を表示
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="showAnalogClock"
+                    checked={appSettings.showAnalogClock}
+                    onChange={(e) =>
+                      updateAppSettings({
+                        showAnalogClock: e.target.checked,
+                      })
+                    }
+                    className="size-4"
+                  />
+                  <label htmlFor="showAnalogClock" className="text-sm">
+                    アナログ時計を表示
                   </label>
                 </div>
               </div>

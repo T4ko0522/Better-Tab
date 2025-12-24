@@ -25,6 +25,8 @@ export interface AppSettings {
   showWeatherLocation: boolean;
   /** 使用する検索エンジン */
   searchEngine: SearchEngine;
+  /** アナログ時計を表示するかどうか */
+  showAnalogClock: boolean;
 }
 
 /**
@@ -67,6 +69,7 @@ export function AppSettingsProvider({ children }: AppSettingsProviderProps): Rea
     fontColor: "white",
     showWeatherLocation: true,
     searchEngine: "google",
+    showAnalogClock: false,
   });
 
   // 初期化: IndexedDBからデータを読み込む
@@ -111,6 +114,10 @@ export function AppSettingsProvider({ children }: AppSettingsProviderProps): Rea
               )
             ) {
               parsedSettings.searchEngine = "google";
+            }
+            // showAnalogClockが存在しない場合はデフォルト値（false）を使用
+            if (typeof parsedSettings.showAnalogClock !== "boolean") {
+              parsedSettings.showAnalogClock = false;
             }
             // IndexedDBからの初期化はuseEffectで行う必要がある
             setSettings(parsedSettings as AppSettings);

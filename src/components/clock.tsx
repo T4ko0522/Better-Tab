@@ -388,6 +388,52 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
     };
   }, [hideWeather, settings.showWeather]);
 
+  /**
+   * アナログ時計の針の角度を計算する
+   *
+   * @returns {object} 時針、分針、秒針の角度（度）
+   */
+  const getAnalogClockAngles = (): { hours: number; minutes: number; seconds: number } => {
+    const now = new Date();
+    const jstTime = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
+    );
+    const hours = jstTime.getHours() % 12;
+    const minutes = jstTime.getMinutes();
+    const seconds = jstTime.getSeconds();
+    const milliseconds = jstTime.getMilliseconds();
+
+    // 時針: 1時間で30度、1分で0.5度
+    const hoursAngle = (hours * 30) + (minutes * 0.5) + (seconds * 0.5 / 60);
+    // 分針: 1分で6度、1秒で0.1度
+    const minutesAngle = (minutes * 6) + (seconds * 0.1) + (milliseconds * 0.1 / 1000);
+    // 秒針: 1秒で6度、ミリ秒も考慮
+    const secondsAngle = (seconds * 6) + (milliseconds * 6 / 1000);
+
+    return { hours: hoursAngle, minutes: minutesAngle, seconds: secondsAngle };
+  };
+
+  const [analogAngles, setAnalogAngles] = useState(getAnalogClockAngles());
+
+  // アナログ時計の角度を更新
+  useEffect(() => {
+    if (!settings.showAnalogClock) {
+      return;
+    }
+
+    const updateAnalogClock = (): void => {
+      setAnalogAngles(getAnalogClockAngles());
+    };
+
+    // 初回更新
+    updateAnalogClock();
+
+    // 16msごとに更新（約60fps、滑らかな動きのため）
+    const interval = setInterval(updateAnalogClock, 16);
+
+    return () => clearInterval(interval);
+  }, [settings.showAnalogClock]);
+
   if (!mounted) {
     return (
       <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border">
@@ -401,9 +447,84 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
 
   return (
     <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border">
-      <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "w-[200px] text-left"}`}>
-        {time}
-      </div>
+      {settings.showAnalogClock ? (
+        <div className="flex flex-col items-center gap-3">
+          {/* アナログ時計 */}
+          <div className="relative size-32 border-2 border-white rounded-full">
+            {/* 時計の目盛り */}
+            {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hour) => {
+              const angle = (hour * 30) - 90; // 12時を上に配置
+              const radian = (angle * Math.PI) / 180;
+              const radius = 56; // 時計の半径から少し内側
+              const x = 64 + radius * Math.cos(radian);
+              const y = 64 + radius * Math.sin(radian);
+              return (
+                <div
+                  key={hour}
+                  className="absolute size-1.5 bg-white rounded-full"
+                  style={{
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                />
+              );
+            })}
+            {/* 時針 */}
+            <div
+              className="absolute"
+              style={{
+                left: "50%",
+                top: "50%",
+                width: "3px",
+                height: "28px",
+                background: "white",
+                borderRadius: "2px",
+                transformOrigin: "bottom center",
+                transform: `translate(-50%, -100%) rotate(${analogAngles.hours}deg)`,
+              }}
+            />
+            {/* 分針 */}
+            <div
+              className="absolute"
+              style={{
+                left: "50%",
+                top: "50%",
+                width: "2px",
+                height: "38px",
+                background: "white",
+                borderRadius: "1px",
+                transformOrigin: "bottom center",
+                transform: `translate(-50%, -100%) rotate(${analogAngles.minutes}deg)`,
+              }}
+            />
+            {/* 秒針 */}
+            <div
+              className="absolute"
+              style={{
+                left: "50%",
+                top: "50%",
+                width: "1px",
+                height: "42px",
+                background: "#ff4444",
+                borderRadius: "0.5px",
+                transformOrigin: "bottom center",
+                transform: `translate(-50%, -100%) rotate(${analogAngles.seconds}deg)`,
+              }}
+            />
+            {/* 中心点 */}
+            <div className="absolute left-1/2 top-1/2 size-2 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 z-10" />
+          </div>
+          {/* デジタル時計 */}
+          <div className={`text-2xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "text-center"}`}>
+            {time}
+          </div>
+        </div>
+      ) : (
+        <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "w-[200px] text-left"}`}>
+          {time}
+        </div>
+      )}
       {!hideWeather && weatherLoading ? (
         <div className="mt-2">
           <div className="flex items-center gap-2">
