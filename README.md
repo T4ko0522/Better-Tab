@@ -75,32 +75,6 @@
 - **holidays-jp.github.io API**: 日本の祝日情報
 - **Qiita API**: トレンド記事
 
-## 📁 プロジェクト構造
-
-```
-src/
-├── app/
-│   ├── api/          # APIルート
-│   │   ├── weather/  # 天気情報API
-│   │   ├── holidays/ # 祝日情報API
-│   │   └── trending/ # トレンド記事API
-│   ├── layout.tsx    # ルートレイアウト
-│   ├── page.tsx      # ホームページ
-│   └── globals.css   # グローバルスタイル
-├── components/       # Reactコンポーネント
-│   ├── calendar.tsx  # カレンダーコンポーネント
-│   ├── clock.tsx     # 時計コンポーネント
-│   ├── trending-articles.tsx # トレンド記事コンポーネント
-│   └── ui/           # UIコンポーネント
-├── hooks/            # カスタムフック
-│   ├── useAppSettings.ts    # アプリ設定管理
-│   └── useBackgroundImages.ts # 背景画像管理
-└── lib/              # ユーティリティ
-    ├── indexeddb-utils.ts   # IndexedDB操作
-    ├── image-utils.ts        # 画像処理
-    └── utils.ts              # 汎用ユーティリティ
-```
-
 ## 📝 ライセンス
 
 このプロジェクトは [Apache License 2.0](LICENSE) の下で公開されています。
