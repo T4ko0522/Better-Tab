@@ -33,6 +33,7 @@ export default function Home(): React.ReactElement {
   const [isUploading, setIsUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
+  const [selectedImageName, setSelectedImageName] = useState<string>("");
   const [thumbnailCache, setThumbnailCache] = useState<Map<string, string>>(new Map());
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isLightBackground, setIsLightBackground] = useState(false);
@@ -153,7 +154,7 @@ export default function Home(): React.ReactElement {
    */
   const handleAddImage = (): void => {
     if (imageUrl.trim()) {
-      addImage(imageUrl.trim());
+      addImage(imageUrl.trim(), undefined, imageUrl.trim());
       setImageUrl("");
     }
   };
@@ -218,12 +219,14 @@ export default function Home(): React.ReactElement {
 
         // 2. 元ファイルをData URLに変換して追加
         const videoDataUrl = await fileToDataUrl(file);
-        addImage(videoDataUrl, thumbnail);
+        addImage(videoDataUrl, thumbnail, file.name);
       } else {
         // 画像の場合はトリミングモーダルを表示
         const dataUrl = await fileToDataUrl(file);
         setSelectedImageSrc(dataUrl);
         setCropperOpen(true);
+        // ファイル名を一時的に保存（トリミング完了時に使用）
+        setSelectedImageName(file.name);
       }
     } catch (error) {
       console.error("Failed to process file:", error);
@@ -245,9 +248,10 @@ export default function Home(): React.ReactElement {
   const handleCropComplete = async (croppedImageUrl: string): Promise<void> => {
     setIsUploading(true);
     try {
-      // トリミングされた画像を追加
-      addImage(croppedImageUrl);
+      // トリミングされた画像を追加（ファイル名も保存）
+      addImage(croppedImageUrl, undefined, selectedImageName);
       setSelectedImageSrc("");
+      setSelectedImageName("");
     } catch (error) {
       console.error("Failed to add image:", error);
       alert("画像の追加に失敗しました");
@@ -502,6 +506,7 @@ export default function Home(): React.ReactElement {
         onClose={() => {
           setCropperOpen(false);
           setSelectedImageSrc("");
+          setSelectedImageName("");
         }}
         open={cropperOpen}
       />

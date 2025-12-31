@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ImagePlus, X, Upload } from "lucide-react";
 import { getDataUrlFromBlobUrl } from "@/hooks/useBackgroundImages";
-import { getThumbnailUrl, isVideoUrl, getDisplayUrl } from "@/lib/media-utils";
+import { getThumbnailUrl, isVideoUrl, getDisplayUrl, truncateText } from "@/lib/media-utils";
 
 /**
  * 背景画像データの型
@@ -24,6 +24,8 @@ interface BackgroundImage {
   url: string;
   /** サムネイルURL（オプション） */
   thumbnail?: string;
+  /** 表示名（ファイル名またはURL、オプション） */
+  name?: string;
 }
 
 /**
@@ -41,7 +43,7 @@ interface BackgroundImageModalProps {
   /** アップロード中かどうか */
   isUploading: boolean;
   /** 背景画像を追加する関数 */
-  addImage: (url: string, thumbnail?: string) => void;
+  addImage: (url: string, thumbnail?: string, name?: string) => void;
   /** 背景画像を削除する関数 */
   removeImage: (id: string) => void;
   /** 背景画像を選択する関数 */
@@ -239,9 +241,9 @@ export const BackgroundImageModal = ({
                         className={`text-xs truncate ${
                           isSelected ? "text-blue-300 font-medium" : ""
                         }`}
-                        title={img.url}
+                        title={img.name || img.url}
                       >
-                        {getDisplayUrl(img.url)}
+                        {img.name ? truncateText(img.name) : truncateText(getDisplayUrl(img.url))}
                       </p>
                     </div>
                     <Button

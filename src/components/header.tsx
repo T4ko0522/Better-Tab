@@ -15,6 +15,8 @@ interface BackgroundImage {
   url: string;
   /** サムネイルURL（オプション） */
   thumbnail?: string;
+  /** 表示名（ファイル名またはURL、オプション） */
+  name?: string;
 }
 
 /**
@@ -32,7 +34,7 @@ interface HeaderProps {
   /** アップロード中かどうか */
   isUploading: boolean;
   /** 背景画像を追加する関数 */
-  addImage: (url: string, thumbnail?: string) => void;
+  addImage: (url: string, thumbnail?: string, name?: string) => void;
   /** 背景画像を削除する関数 */
   removeImage: (id: string) => void;
   /** 背景画像を選択する関数 */
