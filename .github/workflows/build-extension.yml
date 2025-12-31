@@ -26,8 +26,12 @@ jobs:
             - name: Create zip archive
               run: |
                   mkdir -p dist
-                  cd build_scripts/extension
-                  zip -r ../../dist/Better-Tab-v${{steps.package-version.outputs.current-version}}.zip .
+                  VERSION="${{steps.package-version.outputs.current-version}}"
+                  ZIP_NAME="Better-Tab-v${VERSION}"
+                  mkdir -p /tmp/extension-build
+                  cp -r build_scripts/extension /tmp/extension-build/${ZIP_NAME}
+                  cd /tmp/extension-build
+                  zip -r ${GITHUB_WORKSPACE}/dist/${ZIP_NAME}.zip ${ZIP_NAME}
             - name: Release
               uses: softprops/action-gh-release@v2
               with:
