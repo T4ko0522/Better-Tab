@@ -153,6 +153,8 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [height, setHeight] = useState(384); // デフォルト高さ（max-h-96 = 384px）
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
@@ -236,6 +238,48 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
     fetchArticles();
   }, []);
 
+  // 展開状態が変わったときに高さを調整
+  useEffect(() => {
+    if (expanded) {
+      setHeight(600); // 展開時は600pxに
+    } else {
+      setHeight(384); // 折りたたみ時は384pxに戻す
+    }
+  }, [expanded]);
+
+  // リサイズ機能のマウスイベントハンドラ
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!isResizing) return;
+
+      // 画面の下からカーソルまでの距離を計算（md:bottom-6 = 1.5rem = 24px を考慮）
+      const bottomOffset = 24; // md:bottom-6
+      const newHeight = window.innerHeight - e.clientY - bottomOffset;
+
+      // 最小高さ200px、最大高さ800pxに制限
+      const clampedHeight = Math.max(200, Math.min(800, newHeight));
+      setHeight(clampedHeight);
+    };
+
+    const handleMouseUp = (): void => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
+
   if (!mounted) {
     return <div />;
   }
@@ -282,10 +326,23 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
 
   return (
     <div
-      className={`md:fixed md:bottom-6 md:right-6 w-full md:w-80 bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-border z-20 overflow-y-auto scrollbar-hide ${
-        expanded ? "max-h-[500px]" : "max-h-96"
-      }`}
+      className={`md:fixed md:bottom-6 md:right-6 w-full md:w-80 bg-black/30 backdrop-blur-sm rounded-lg border border-border z-20 ${
+        expanded ? 'flex flex-col' : ''
+      } ${!expanded ? 'max-h-96' : ''}`}
+      style={expanded && mounted ? { height: `${height}px` } : {}}
     >
+      {/* リサイズハンドル（展開時のみ表示） */}
+      {expanded && (
+        <div
+          className="w-full h-2 cursor-ns-resize hover:bg-white/10 rounded-t-lg flex items-center justify-center"
+          onMouseDown={() => setIsResizing(true)}
+        >
+          <div className="w-12 h-1 bg-white/30 rounded-full" />
+        </div>
+      )}
+
+      {/* コンテンツエリア */}
+      <div className={`${expanded ? 'flex-1' : ''} overflow-y-auto scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80"
@@ -353,6 +410,7 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
             )}
           </a>
         ))}
+      </div>
       </div>
     </div>
   );
