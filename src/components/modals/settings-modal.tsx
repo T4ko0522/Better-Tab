@@ -67,6 +67,10 @@ interface SettingsModalProps {
   settingsVideoShuffle: boolean;
   /** 動画シャッフル設定を更新する関数 */
   setSettingsVideoShuffle: (value: boolean) => void;
+  /** 動画を時間で変更する設定 */
+  settingsVideoChangeByTime: boolean;
+  /** 動画を時間で変更する設定を更新する関数 */
+  setSettingsVideoChangeByTime: (value: boolean) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
@@ -100,6 +104,8 @@ export const SettingsModal = ({
   setSettingsVideoChangeInterval,
   settingsVideoShuffle,
   setSettingsVideoShuffle,
+  settingsVideoChangeByTime,
+  setSettingsVideoChangeByTime,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
@@ -283,7 +289,7 @@ export const SettingsModal = ({
                     className="size-4"
                   />
                   <label htmlFor="shuffle" className={`text-sm ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
-                    ランダムにシャッフル
+                    画像をランダムに変更
                   </label>
                 </div>
                 <div>
@@ -334,6 +340,22 @@ export const SettingsModal = ({
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    id="videoChangeByTime"
+                    checked={settingsVideoChangeByTime}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setSettingsVideoChangeByTime(value);
+                      updateSettings({ videoChangeByTime: value });
+                    }}
+                    className="size-4"
+                  />
+                  <label htmlFor="videoChangeByTime" className="text-sm">
+                    動画を時間で変更する
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
                     id="videoShuffle"
                     checked={settingsVideoShuffle}
                     onChange={(e) => {
@@ -341,19 +363,20 @@ export const SettingsModal = ({
                       setSettingsVideoShuffle(value);
                       updateSettings({ videoShuffle: value });
                     }}
+                    disabled={!settingsVideoChangeByTime}
                     className="size-4"
                   />
-                  <label htmlFor="videoShuffle" className="text-sm">
+                  <label htmlFor="videoShuffle" className={`text-sm ${!settingsVideoChangeByTime ? "text-muted-foreground" : ""}`}>
                     動画をランダムに変更
                   </label>
                 </div>
-                {!settingsVideoShuffle && (
+                {!settingsVideoShuffle && settingsVideoChangeByTime && (
                   <p className="text-xs text-yellow-800 dark:text-yellow-200">
                     ※ 動画の自動変更がオフになっています。現在の動画が固定されます。
                   </p>
                 )}
                 <div>
-                  <label htmlFor="videoChangeInterval" className={`text-sm block mb-2 ${!settingsVideoShuffle ? "text-muted-foreground" : ""}`}>
+                  <label htmlFor="videoChangeInterval" className={`text-sm block mb-2 ${!settingsVideoChangeByTime || !settingsVideoShuffle ? "text-muted-foreground" : ""}`}>
                     動画変更間隔（時間）
                   </label>
                   <Input
@@ -366,7 +389,7 @@ export const SettingsModal = ({
                       setSettingsVideoChangeInterval(value);
                       updateSettings({ videoChangeInterval: value });
                     }}
-                    disabled={!settingsVideoShuffle}
+                    disabled={!settingsVideoChangeByTime || !settingsVideoShuffle}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）

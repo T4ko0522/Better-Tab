@@ -35,6 +35,8 @@ export interface BackgroundSettings {
   videoChangeInterval: number;
   /** 動画をランダムに変更するかどうか */
   videoShuffle: boolean;
+  /** 動画を時間で変更するかどうか */
+  videoChangeByTime: boolean;
 }
 
 /**
@@ -207,6 +209,7 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
     selectedImageUrl: null,
     videoChangeInterval: 24,
     videoShuffle: true,
+    videoChangeByTime: false,
   });
 
   // 初期化: IndexedDBからデータを読み込む
@@ -324,6 +327,11 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 typeof (parsed as { videoShuffle: unknown }).videoShuffle === "boolean"
                   ? ((parsed as { videoShuffle: unknown }).videoShuffle as boolean)
                   : true,
+              videoChangeByTime:
+                "videoChangeByTime" in parsed &&
+                typeof (parsed as { videoChangeByTime: unknown }).videoChangeByTime === "boolean"
+                  ? ((parsed as { videoChangeByTime: unknown }).videoChangeByTime as boolean)
+                  : false,
             };
             setSettings(settingsWithDefaults);
             
@@ -690,8 +698,8 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
 
   // 動画の時刻ベース変更チェック（1時間ごとにチェック）
   useEffect(() => {
-    // videoShuffleがfalseの場合は動画変更を行わない
-    if (!settings.videoShuffle || images.length <= 1 || !settings.videoChangeInterval) return;
+    // videoChangeByTimeがfalse、またはvideoShuffleがfalseの場合は動画変更を行わない
+    if (!settings.videoChangeByTime || !settings.videoShuffle || images.length <= 1 || !settings.videoChangeInterval) return;
 
     /**
      * 動画を変更すべきかチェックして、必要なら変更する
@@ -760,7 +768,7 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
     const interval = setInterval(checkAndChangeVideo, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [currentImage, images, settings.videoChangeInterval, settings.videoShuffle, selectImage]);
+  }, [currentImage, images, settings.videoChangeInterval, settings.videoShuffle, settings.videoChangeByTime, selectImage]);
 
   return {
     images,
