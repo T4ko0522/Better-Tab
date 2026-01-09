@@ -454,84 +454,197 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
   return (
     <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border">
       {settings.showAnalogClock ? (
-        <div className="flex flex-col items-center gap-3">
-          {/* アナログ時計 */}
-          <div className="relative size-32 border-2 border-white rounded-full">
-            {/* 時計の目盛り */}
-            {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hour) => {
-              const angle = (hour * 30) - 90; // 12時を上に配置
-              const radian = (angle * Math.PI) / 180;
-              const radius = 56; // 時計の半径から少し内側
-              const x = 64 + radius * Math.cos(radian);
-              const y = 64 + radius * Math.sin(radian);
-              return (
-                <div
-                  key={hour}
-                  className="absolute size-1.5 bg-white rounded-full"
-                  style={{
-                    left: `${x}px`,
-                    top: `${y}px`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
-              );
-            })}
-            {/* 時針 */}
-            <div
-              className="absolute"
-              style={{
-                left: "50%",
-                top: "50%",
-                width: "3px",
-                height: "28px",
-                background: "white",
-                borderRadius: "2px",
-                transformOrigin: "bottom center",
-                transform: `translate(-50%, -100%) rotate(${analogAngles.hours}deg)`,
-              }}
-            />
-            {/* 分針 */}
-            <div
-              className="absolute"
-              style={{
-                left: "50%",
-                top: "50%",
-                width: "2px",
-                height: "38px",
-                background: "white",
-                borderRadius: "1px",
-                transformOrigin: "bottom center",
-                transform: `translate(-50%, -100%) rotate(${analogAngles.minutes}deg)`,
-              }}
-            />
-            {/* 秒針 */}
-            <div
-              className="absolute"
-              style={{
-                left: "50%",
-                top: "50%",
-                width: "1px",
-                height: "42px",
-                background: "#ff4444",
-                borderRadius: "0.5px",
-                transformOrigin: "bottom center",
-                transform: `translate(-50%, -100%) rotate(${analogAngles.seconds}deg)`,
-              }}
-            />
-            {/* 中心点 */}
-            <div className="absolute left-1/2 top-1/2 size-2 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 z-10" />
+        <div className={`flex gap-4 ${!hideWeather && settings.showWeather ? "flex-row items-center" : "flex-col items-center"}`}>
+          {/* 左側: 時計部分 */}
+          <div className="flex flex-col items-center gap-3">
+            {/* デジタル時計（上に表示） */}
+            <div className={`text-2xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "text-center"}`}>
+              {time}
+            </div>
+            {/* アナログ時計 */}
+            <div className="relative size-32 border-2 border-white rounded-full">
+              {/* 時計の目盛り */}
+              {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hour) => {
+                const angle = (hour * 30) - 90; // 12時を上に配置
+                const radian = (angle * Math.PI) / 180;
+                const radius = 56; // 時計の半径から少し内側
+                const x = 64 + radius * Math.cos(radian);
+                const y = 64 + radius * Math.sin(radian);
+                return (
+                  <div
+                    key={hour}
+                    className="absolute size-1.5 bg-white rounded-full"
+                    style={{
+                      left: `${x}px`,
+                      top: `${y}px`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                );
+              })}
+              {/* 時針 */}
+              <div
+                className="absolute"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  width: "3px",
+                  height: "28px",
+                  background: "white",
+                  borderRadius: "2px",
+                  transformOrigin: "bottom center",
+                  transform: `translate(-50%, -100%) rotate(${analogAngles.hours}deg)`,
+                }}
+              />
+              {/* 分針 */}
+              <div
+                className="absolute"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  width: "2px",
+                  height: "38px",
+                  background: "white",
+                  borderRadius: "1px",
+                  transformOrigin: "bottom center",
+                  transform: `translate(-50%, -100%) rotate(${analogAngles.minutes}deg)`,
+                }}
+              />
+              {/* 秒針 */}
+              <div
+                className="absolute"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  width: "1px",
+                  height: "42px",
+                  background: "#ff4444",
+                  borderRadius: "0.5px",
+                  transformOrigin: "bottom center",
+                  transform: `translate(-50%, -100%) rotate(${analogAngles.seconds}deg)`,
+                }}
+              />
+              {/* 中心点 */}
+              <div className="absolute left-1/2 top-1/2 size-2 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 z-10" />
+            </div>
           </div>
-          {/* デジタル時計 */}
-          <div className={`text-2xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "text-center"}`}>
-            {time}
-          </div>
+          {/* 右側: 天気部分 */}
+          {!hideWeather && settings.showWeather && (
+            <div className="shrink-0">
+              {weatherLoading ? (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 bg-white/20 rounded" />
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-4 w-12 bg-white/20 rounded" />
+                      <div className="h-3 w-32 bg-white/20 rounded" />
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-white/20">
+                    <div className="text-xs text-white/80 mb-1">今後の予報</div>
+                    <div className="space-y-1">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="size-4 bg-white/20 rounded" />
+                          <div className="h-3 w-24 bg-white/20 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                weather && (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {getSunMoonIcon(
+                        weather.description,
+                        getTimeBasedIcon(weather.icon),
+                        32
+                      ) || (
+                        <Image
+                          src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
+                          alt={weather.description}
+                          width={32}
+                          height={32}
+                          className="size-8"
+                          unoptimized
+                        />
+                      )}
+                      <div className="flex flex-col">
+                        {weather.temperature !== null && (
+                          <div className="text-sm font-medium text-white">
+                            {weather.temperature}°C
+                          </div>
+                        )}
+                        <div className="text-xs text-white">
+                          {weather.description}
+                          {settings.showWeatherLocation && ` - ${weather.location}`}
+                        </div>
+                      </div>
+                    </div>
+                    {weather.warnings && weather.warnings.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="text-xs text-red-400 font-semibold mb-1">
+                          ⚠ 警報・注意報
+                        </div>
+                        <div className="space-y-1">
+                          {weather.warnings.map((warning, index) => (
+                            <div
+                              key={index}
+                              className="text-xs text-red-300 bg-red-500/20 rounded px-2 py-1"
+                            >
+                              {warning.type}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {weather.futureForecast && weather.futureForecast.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="text-xs text-white/80 mb-1">今後の予報</div>
+                        <div className="space-y-1">
+                          {weather.futureForecast.map((forecast, index) => {
+                            const sunMoonIcon = getSunMoonIcon(
+                              forecast.description,
+                              forecast.icon,
+                              16
+                            );
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 text-xs text-white"
+                              >
+                                {sunMoonIcon || (
+                                  <Image
+                                    src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
+                                    alt={forecast.description}
+                                    width={16}
+                                    height={16}
+                                    className="size-4"
+                                    unoptimized
+                                  />
+                                )}
+                                <span className="text-xs">
+                                  {forecast.time}: {forecast.description}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "w-[200px] text-left"}`}>
           {time}
         </div>
       )}
-      {!hideWeather && weatherLoading ? (
+      {!settings.showAnalogClock && !hideWeather && weatherLoading ? (
         <div className="mt-2">
           <div className="flex items-center gap-2">
             <div className="size-8 bg-white/20 rounded" />
@@ -553,7 +666,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
           </div>
         </div>
       ) : (
-        !hideWeather && weather && (
+        !settings.showAnalogClock && !hideWeather && weather && (
           <div className="mt-2">
             <div className="flex items-center gap-2">
               {getSunMoonIcon(
