@@ -30,6 +30,8 @@ const articlesCache: {
 };
 
 const STORAGE_KEY = "trending-articles";
+const HEIGHT_STORAGE_KEY = "trending-panel-height";
+const EXPANDED_STORAGE_KEY = "trending-panel-expanded";
 const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12時間（ミリ秒）
 
 /**
@@ -89,6 +91,82 @@ const saveCachedArticles = (articles: TrendingArticle[]): void => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     console.error("Failed to save trending articles to localStorage:", error);
+  }
+};
+
+/**
+ * localStorageからパネルの高さを取得する
+ *
+ * @returns {number} 保存された高さ、またはデフォルト値
+ */
+const getSavedHeight = (): number => {
+  if (typeof window === "undefined") {
+    return 384;
+  }
+
+  try {
+    const saved = localStorage.getItem(HEIGHT_STORAGE_KEY);
+    if (saved) {
+      const height = Number.parseInt(saved, 10);
+      if (!Number.isNaN(height) && height >= 200 && height <= 800) {
+        return height;
+      }
+    }
+  } catch {
+    // エラー時はデフォルト値を返す
+  }
+  return 384;
+};
+
+/**
+ * localStorageにパネルの高さを保存する
+ *
+ * @param {number} height - 保存する高さ
+ */
+const saveHeight = (height: number): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(HEIGHT_STORAGE_KEY, height.toString());
+  } catch (error) {
+    console.error("Failed to save panel height to localStorage:", error);
+  }
+};
+
+/**
+ * localStorageから展開状態を取得する
+ *
+ * @returns {boolean} 保存された展開状態、またはfalse
+ */
+const getSavedExpanded = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const saved = localStorage.getItem(EXPANDED_STORAGE_KEY);
+    return saved === "true";
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * localStorageに展開状態を保存する
+ *
+ * @param {boolean} expanded - 保存する展開状態
+ */
+const saveExpanded = (expanded: boolean): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, expanded.toString());
+  } catch (error) {
+    console.error("Failed to save expanded state to localStorage:", error);
   }
 };
 
@@ -155,10 +233,18 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
   const [expanded, setExpanded] = useState(false);
   const [height, setHeight] = useState(384); // デフォルト高さ（max-h-96 = 384px）
   const [isResizing, setIsResizing] = useState(false);
+  const [initialized, setInitialized] = useState(false); // 初期化フラグ
 
   useEffect(() => {
     // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
     setMounted(true);
+
+    // 初回マウント時にlocalStorageから設定を読み込む
+    const savedHeight = getSavedHeight();
+    const savedExpanded = getSavedExpanded();
+    setHeight(savedHeight);
+    setExpanded(savedExpanded);
+    setInitialized(true);
 
     /**
      * トレンド記事を取得する
@@ -238,17 +324,28 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
     fetchArticles();
   }, []);
 
-  // 展開状態が変わったときに高さを調整
-  useEffect(() => {
-    if (expanded) {
-      setHeight(600); // 展開時は600pxに
+  // 展開状態が手動で変更されたときの処理
+  const handleExpandToggle = (): void => {
+    const newExpanded = !expanded;
+    setExpanded(newExpanded);
+    saveExpanded(newExpanded);
+
+    if (newExpanded) {
+      // 展開時: 保存された高さがあればそれを使用、なければ600px
+      const savedHeight = getSavedHeight();
+      const newHeight = savedHeight > 384 ? savedHeight : 600;
+      setHeight(newHeight);
+      saveHeight(newHeight);
     } else {
-      setHeight(384); // 折りたたみ時は384pxに戻す
+      // 折りたたみ時は384pxに戻す
+      setHeight(384);
     }
-  }, [expanded]);
+  };
 
   // リサイズ機能のマウスイベントハンドラ
   useEffect(() => {
+    let currentHeight = height;
+
     const handleMouseMove = (e: MouseEvent): void => {
       if (!isResizing) return;
 
@@ -258,11 +355,14 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
 
       // 最小高さ200px、最大高さ800pxに制限
       const clampedHeight = Math.max(200, Math.min(800, newHeight));
+      currentHeight = clampedHeight;
       setHeight(clampedHeight);
     };
 
     const handleMouseUp = (): void => {
       setIsResizing(false);
+      // リサイズ完了時に高さを保存
+      saveHeight(currentHeight);
     };
 
     if (isResizing) {
@@ -278,7 +378,7 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isResizing]);
+  }, [isResizing, height]);
 
   if (!mounted) {
     return <div />;
@@ -344,7 +444,7 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
       {/* コンテンツエリア */}
       <div className={`${expanded ? 'flex-1' : ''} overflow-y-auto scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleExpandToggle}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80"
       >
         <h3 className="text-lg font-semibold text-foreground">トレンド記事</h3>
