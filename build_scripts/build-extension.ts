@@ -15,6 +15,8 @@ const projectRoot = path.resolve(__dirname, "../..");
 const apiDir = path.resolve(projectRoot, "src/app/api");
 // Next.jsがルートとして認識しないよう、src/appの外にバックアップを配置
 const apiBackupDir = path.resolve(projectRoot, ".api-backup");
+const notFoundFile = path.resolve(projectRoot, "src/app/not-found.tsx");
+const notFoundBackupFile = path.resolve(projectRoot, ".not-found-backup.tsx");
 
 /**
  * APIルートを一時的にバックアップ
@@ -38,6 +40,18 @@ function backupApiRoutes(): void {
 }
 
 /**
+ * not-found.tsxを一時的にバックアップ
+ */
+function backupNotFound(): void {
+  if (fs.existsSync(notFoundFile)) {
+    console.log("not-found.tsxをバックアップ中...");
+    fs.copyFileSync(notFoundFile, notFoundBackupFile);
+    fs.unlinkSync(notFoundFile);
+    console.log("✓ not-found.tsxをバックアップしました");
+  }
+}
+
+/**
  * APIルートを復元
  */
 function restoreApiRoutes(): void {
@@ -53,9 +67,23 @@ function restoreApiRoutes(): void {
   }
 }
 
+/**
+ * not-found.tsxを復元
+ */
+function restoreNotFound(): void {
+  if (fs.existsSync(notFoundBackupFile)) {
+    console.log("not-found.tsxを復元中...");
+    fs.copyFileSync(notFoundBackupFile, notFoundFile);
+    fs.unlinkSync(notFoundBackupFile);
+    console.log("✓ not-found.tsxを復元しました");
+  }
+}
+
 try {
   // APIルートをバックアップ
   backupApiRoutes();
+  // not-found.tsxをバックアップ
+  backupNotFound();
 
   // 静的ビルドを実行
   console.log("\n静的ビルドを実行中...");
@@ -76,6 +104,7 @@ try {
   console.error("\n✗ ビルドエラーが発生しました");
   throw error;
 } finally {
-  // エラーが発生してもAPIルートを必ず復元
+  // エラーが発生してもAPIルートとnot-found.tsxを必ず復元
   restoreApiRoutes();
+  restoreNotFound();
 }
