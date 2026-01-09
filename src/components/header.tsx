@@ -77,10 +77,6 @@ interface HeaderProps {
   settingsVideoChangeByTime: boolean;
   /** 動画を時間で変更する設定を更新する関数 */
   setSettingsVideoChangeByTime: (value: boolean) => void;
-  /** タブが非アクティブになったときに動画を停止する設定 */
-  settingsPauseVideoOnHidden: boolean;
-  /** タブが非アクティブになったときに動画を停止する設定を更新する関数 */
-  setSettingsPauseVideoOnHidden: (value: boolean) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
@@ -126,8 +122,6 @@ export const Header = ({
   setSettingsVideoShuffle,
   settingsVideoChangeByTime,
   setSettingsVideoChangeByTime,
-  settingsPauseVideoOnHidden,
-  setSettingsPauseVideoOnHidden,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
@@ -166,8 +160,6 @@ export const Header = ({
         setSettingsVideoShuffle={setSettingsVideoShuffle}
         settingsVideoChangeByTime={settingsVideoChangeByTime}
         setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
-        settingsPauseVideoOnHidden={settingsPauseVideoOnHidden}
-        setSettingsPauseVideoOnHidden={setSettingsPauseVideoOnHidden}
         settingsTab={settingsTab}
         setSettingsTab={setSettingsTab}
         handleOpenSettings={handleOpenSettings}

@@ -35,8 +35,6 @@ export interface BackgroundSettings {
   videoShuffle: boolean;
   /** 動画を時間で変更するかどうか */
   videoChangeByTime: boolean;
-  /** タブが非アクティブになったときに動画を停止するかどうか */
-  pauseVideoOnHidden: boolean;
 }
 
 /**
@@ -209,7 +207,6 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
     videoChangeInterval: 24,
     videoShuffle: true,
     videoChangeByTime: false,
-    pauseVideoOnHidden: true,
   });
 
   // 初期化: IndexedDBからデータを読み込む
@@ -326,11 +323,6 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 typeof (parsed as { videoChangeByTime: unknown }).videoChangeByTime === "boolean"
                   ? ((parsed as { videoChangeByTime: unknown }).videoChangeByTime as boolean)
                   : false,
-              pauseVideoOnHidden:
-                "pauseVideoOnHidden" in parsed &&
-                typeof (parsed as { pauseVideoOnHidden: unknown }).pauseVideoOnHidden === "boolean"
-                  ? ((parsed as { pauseVideoOnHidden: unknown }).pauseVideoOnHidden as boolean)
-                  : true,
             };
             setSettings(settingsWithDefaults);
             

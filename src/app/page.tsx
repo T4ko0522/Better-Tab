@@ -30,7 +30,6 @@ export default function Home(): React.ReactElement {
   const [settingsVideoChangeInterval, setSettingsVideoChangeInterval] = useState(24);
   const [settingsVideoShuffle, setSettingsVideoShuffle] = useState(true);
   const [settingsVideoChangeByTime, setSettingsVideoChangeByTime] = useState(false);
-  const [settingsPauseVideoOnHidden, setSettingsPauseVideoOnHidden] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
@@ -271,7 +270,6 @@ export default function Home(): React.ReactElement {
     setSettingsVideoChangeInterval(settings.videoChangeInterval);
     setSettingsVideoShuffle(settings.videoShuffle);
     setSettingsVideoChangeByTime(settings.videoChangeByTime);
-    setSettingsPauseVideoOnHidden(settings.pauseVideoOnHidden);
   };
 
 
@@ -334,32 +332,6 @@ export default function Home(): React.ReactElement {
   React.useEffect(() => {
     setIsVideoLoaded(false);
   }, [currentImage, isVideo]);
-
-  // バックグラウンド時に動画を停止する（設定が有効な場合のみ）
-  React.useEffect(() => {
-    if (!isVideo || !videoRef.current || !settings.pauseVideoOnHidden) return;
-
-    /**
-     * ページの可視性が変更されたときの処理
-     */
-    const handleVisibilityChange = (): void => {
-      if (!videoRef.current) return;
-
-      if (document.hidden) {
-        // タブがバックグラウンドになったら動画を一時停止
-        videoRef.current.pause();
-      } else {
-        // タブがフォアグラウンドに戻ったら動画を再生
-        void videoRef.current.play();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [isVideo, settings.pauseVideoOnHidden]);
 
   // 背景画像の明るさを判定
   React.useEffect(() => {
@@ -440,8 +412,6 @@ export default function Home(): React.ReactElement {
           setSettingsVideoShuffle={setSettingsVideoShuffle}
           settingsVideoChangeByTime={settingsVideoChangeByTime}
           setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
-          settingsPauseVideoOnHidden={settingsPauseVideoOnHidden}
-          setSettingsPauseVideoOnHidden={setSettingsPauseVideoOnHidden}
           settingsTab={settingsTab}
           setSettingsTab={setSettingsTab}
           handleOpenSettings={handleOpenSettings}

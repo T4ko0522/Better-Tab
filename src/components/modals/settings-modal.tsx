@@ -69,10 +69,6 @@ interface SettingsModalProps {
   settingsVideoChangeByTime: boolean;
   /** 動画を時間で変更する設定を更新する関数 */
   setSettingsVideoChangeByTime: (value: boolean) => void;
-  /** タブが非アクティブになったときに動画を停止する設定 */
-  settingsPauseVideoOnHidden: boolean;
-  /** タブが非アクティブになったときに動画を停止する設定を更新する関数 */
-  setSettingsPauseVideoOnHidden: (value: boolean) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
@@ -106,8 +102,6 @@ export const SettingsModal = ({
   setSettingsVideoShuffle,
   settingsVideoChangeByTime,
   setSettingsVideoChangeByTime,
-  settingsPauseVideoOnHidden,
-  setSettingsPauseVideoOnHidden,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
@@ -456,22 +450,6 @@ export const SettingsModal = ({
                   <p className="text-xs text-muted-foreground mt-1">
                     ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）
                   </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="pauseVideoOnHidden"
-                    checked={settingsPauseVideoOnHidden}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsPauseVideoOnHidden(value);
-                      updateSettings({ pauseVideoOnHidden: value });
-                    }}
-                    className="size-4"
-                  />
-                  <label htmlFor="pauseVideoOnHidden" className="text-sm">
-                    タブが非アクティブになったときに動画を停止する
-                  </label>
                 </div>
               </div>
             </div>
