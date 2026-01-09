@@ -421,14 +421,14 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
     return <div />;
   }
 
-  const displayedArticles = articles;
+  const displayedArticles = expanded ? articles : articles.slice(0, 3);
   const hasMore = articles.length > 3;
 
   return (
     <div
       className={`md:fixed md:bottom-6 md:right-6 w-full md:w-80 bg-black/30 backdrop-blur-sm rounded-lg border border-border z-20 ${
         expanded ? 'flex flex-col' : ''
-      } ${!expanded ? 'max-h-96' : ''}`}
+      } ${!expanded ? 'max-h-96 overflow-hidden' : ''}`}
       style={expanded && mounted ? { height: `${height}px` } : {}}
     >
       {/* リサイズハンドル（展開時のみ表示） */}
@@ -442,7 +442,7 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
       )}
 
       {/* コンテンツエリア */}
-      <div className={`${expanded ? 'flex-1' : ''} overflow-y-auto scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
+      <div className={`${expanded ? 'flex-1 overflow-y-auto' : 'overflow-hidden'} scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
       <button
         onClick={handleExpandToggle}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80"
