@@ -26,11 +26,11 @@ export default function Home(): React.ReactElement {
   const [imageUrl, setImageUrl] = useState("");
   const [settingsShuffle, setSettingsShuffle] = useState(true);
   const [settingsInterval, setSettingsInterval] = useState(5);
-  const [settingsShowOverlay, setSettingsShowOverlay] = useState(true);
   const [settingsChangeByTime, setSettingsChangeByTime] = useState(false);
   const [settingsVideoChangeInterval, setSettingsVideoChangeInterval] = useState(24);
   const [settingsVideoShuffle, setSettingsVideoShuffle] = useState(true);
   const [settingsVideoChangeByTime, setSettingsVideoChangeByTime] = useState(false);
+  const [settingsPauseVideoOnHidden, setSettingsPauseVideoOnHidden] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
@@ -267,11 +267,11 @@ export default function Home(): React.ReactElement {
   const handleOpenSettings = (): void => {
     setSettingsShuffle(settings.shuffle);
     setSettingsInterval(settings.changeInterval);
-    setSettingsShowOverlay(settings.showOverlay);
     setSettingsChangeByTime(settings.changeByTime);
     setSettingsVideoChangeInterval(settings.videoChangeInterval);
     setSettingsVideoShuffle(settings.videoShuffle);
     setSettingsVideoChangeByTime(settings.videoChangeByTime);
+    setSettingsPauseVideoOnHidden(settings.pauseVideoOnHidden);
   };
 
 
@@ -335,9 +335,9 @@ export default function Home(): React.ReactElement {
     setIsVideoLoaded(false);
   }, [currentImage, isVideo]);
 
-  // バックグラウンド時に動画を停止する
+  // バックグラウンド時に動画を停止する（設定が有効な場合のみ）
   React.useEffect(() => {
-    if (!isVideo || !videoRef.current) return;
+    if (!isVideo || !videoRef.current || !settings.pauseVideoOnHidden) return;
 
     /**
      * ページの可視性が変更されたときの処理
@@ -359,7 +359,7 @@ export default function Home(): React.ReactElement {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isVideo]);
+  }, [isVideo, settings.pauseVideoOnHidden]);
 
   // 背景画像の明るさを判定
   React.useEffect(() => {
@@ -400,7 +400,7 @@ export default function Home(): React.ReactElement {
         videoRef={videoRef}
         isVideoLoaded={isVideoLoaded}
         setIsVideoLoaded={setIsVideoLoaded}
-        showOverlay={settings.showOverlay}
+        backgroundBrightness={appSettings.backgroundBrightness}
       />
 
       {/* メインコンテンツ */}
@@ -432,8 +432,6 @@ export default function Home(): React.ReactElement {
           setSettingsShuffle={setSettingsShuffle}
           settingsInterval={settingsInterval}
           setSettingsInterval={setSettingsInterval}
-          settingsShowOverlay={settingsShowOverlay}
-          setSettingsShowOverlay={setSettingsShowOverlay}
           settingsChangeByTime={settingsChangeByTime}
           setSettingsChangeByTime={setSettingsChangeByTime}
           settingsVideoChangeInterval={settingsVideoChangeInterval}
@@ -442,6 +440,8 @@ export default function Home(): React.ReactElement {
           setSettingsVideoShuffle={setSettingsVideoShuffle}
           settingsVideoChangeByTime={settingsVideoChangeByTime}
           setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
+          settingsPauseVideoOnHidden={settingsPauseVideoOnHidden}
+          setSettingsPauseVideoOnHidden={setSettingsPauseVideoOnHidden}
           settingsTab={settingsTab}
           setSettingsTab={setSettingsTab}
           handleOpenSettings={handleOpenSettings}

@@ -25,8 +25,6 @@ export interface BackgroundSettings {
   shuffle: boolean;
   /** 画像変更間隔（分単位） */
   changeInterval: number;
-  /** 背景画像の上にオーバーレイを表示するかどうか */
-  showOverlay: boolean;
   /** 画像を時間で変更するかどうか */
   changeByTime: boolean;
   /** 選択された画像のURL（永続化用） */
@@ -37,6 +35,8 @@ export interface BackgroundSettings {
   videoShuffle: boolean;
   /** 動画を時間で変更するかどうか */
   videoChangeByTime: boolean;
+  /** タブが非アクティブになったときに動画を停止するかどうか */
+  pauseVideoOnHidden: boolean;
 }
 
 /**
@@ -204,12 +204,12 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   const [settings, setSettings] = useState<BackgroundSettings>({
     shuffle: true,
     changeInterval: 5,
-    showOverlay: false,
     changeByTime: false,
     selectedImageUrl: null,
     videoChangeInterval: 24,
     videoShuffle: true,
     videoChangeByTime: false,
+    pauseVideoOnHidden: true,
   });
 
   // 初期化: IndexedDBからデータを読み込む
@@ -299,12 +299,6 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
               changeInterval: (parsed as {
                 changeInterval: unknown;
               }).changeInterval as number,
-              showOverlay:
-                "showOverlay" in parsed &&
-                typeof (parsed as { showOverlay: unknown }).showOverlay ===
-                  "boolean"
-                  ? ((parsed as { showOverlay: unknown }).showOverlay as boolean)
-                  : false,
               changeByTime:
                 "changeByTime" in parsed &&
                 typeof (parsed as { changeByTime: unknown }).changeByTime ===
@@ -332,6 +326,11 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 typeof (parsed as { videoChangeByTime: unknown }).videoChangeByTime === "boolean"
                   ? ((parsed as { videoChangeByTime: unknown }).videoChangeByTime as boolean)
                   : false,
+              pauseVideoOnHidden:
+                "pauseVideoOnHidden" in parsed &&
+                typeof (parsed as { pauseVideoOnHidden: unknown }).pauseVideoOnHidden === "boolean"
+                  ? ((parsed as { pauseVideoOnHidden: unknown }).pauseVideoOnHidden as boolean)
+                  : true,
             };
             setSettings(settingsWithDefaults);
             

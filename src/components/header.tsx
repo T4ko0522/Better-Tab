@@ -61,10 +61,6 @@ interface HeaderProps {
   settingsInterval: number;
   /** 画像変更間隔設定を更新する関数 */
   setSettingsInterval: (value: number) => void;
-  /** オーバーレイ表示設定 */
-  settingsShowOverlay: boolean;
-  /** オーバーレイ表示設定を更新する関数 */
-  setSettingsShowOverlay: (value: boolean) => void;
   /** 時間で変更設定 */
   settingsChangeByTime: boolean;
   /** 時間で変更設定を更新する関数 */
@@ -81,6 +77,10 @@ interface HeaderProps {
   settingsVideoChangeByTime: boolean;
   /** 動画を時間で変更する設定を更新する関数 */
   setSettingsVideoChangeByTime: (value: boolean) => void;
+  /** タブが非アクティブになったときに動画を停止する設定 */
+  settingsPauseVideoOnHidden: boolean;
+  /** タブが非アクティブになったときに動画を停止する設定を更新する関数 */
+  setSettingsPauseVideoOnHidden: (value: boolean) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
@@ -118,8 +118,6 @@ export const Header = ({
   setSettingsShuffle,
   settingsInterval,
   setSettingsInterval,
-  settingsShowOverlay,
-  setSettingsShowOverlay,
   settingsChangeByTime,
   setSettingsChangeByTime,
   settingsVideoChangeInterval,
@@ -128,6 +126,8 @@ export const Header = ({
   setSettingsVideoShuffle,
   settingsVideoChangeByTime,
   setSettingsVideoChangeByTime,
+  settingsPauseVideoOnHidden,
+  setSettingsPauseVideoOnHidden,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
@@ -158,8 +158,6 @@ export const Header = ({
         setSettingsShuffle={setSettingsShuffle}
         settingsInterval={settingsInterval}
         setSettingsInterval={setSettingsInterval}
-        settingsShowOverlay={settingsShowOverlay}
-        setSettingsShowOverlay={setSettingsShowOverlay}
         settingsChangeByTime={settingsChangeByTime}
         setSettingsChangeByTime={setSettingsChangeByTime}
         settingsVideoChangeInterval={settingsVideoChangeInterval}
@@ -168,6 +166,8 @@ export const Header = ({
         setSettingsVideoShuffle={setSettingsVideoShuffle}
         settingsVideoChangeByTime={settingsVideoChangeByTime}
         setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
+        settingsPauseVideoOnHidden={settingsPauseVideoOnHidden}
+        setSettingsPauseVideoOnHidden={setSettingsPauseVideoOnHidden}
         settingsTab={settingsTab}
         setSettingsTab={setSettingsTab}
         handleOpenSettings={handleOpenSettings}

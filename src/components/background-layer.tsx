@@ -16,13 +16,13 @@ interface BackgroundLayerProps {
   isVideoLoaded: boolean;
   /** 動画読み込み状態を更新する関数 */
   setIsVideoLoaded: (loaded: boolean) => void;
-  /** オーバーレイを表示するか */
-  showOverlay: boolean;
+  /** 背景の明るさ調整（-50から+50、0がデフォルト） */
+  backgroundBrightness: number;
 }
 
 /**
  * 背景レイヤーコンポーネント
- * 背景画像や動画、オーバーレイを表示する
+ * 背景画像や動画を表示する
  *
  * @param {BackgroundLayerProps} props - コンポーネントのプロパティ
  * @returns {React.ReactElement} 背景レイヤー
@@ -34,7 +34,7 @@ export const BackgroundLayer = ({
   videoRef,
   isVideoLoaded,
   setIsVideoLoaded,
-  showOverlay,
+  backgroundBrightness,
 }: BackgroundLayerProps): React.ReactElement => {
   // 動画の再生状態を監視し、停止した場合に自動的に再生を再開
   React.useEffect(() => {
@@ -148,9 +148,15 @@ export const BackgroundLayer = ({
           }}
         />
       )}
-      {/* オーバーレイ（背景メディアがある場合かつ設定で有効な場合のみ表示） */}
-      {currentImage && showOverlay && (
-        <div className="absolute inset-0 bg-background/20 dark:bg-background/40 z-1" />
+      {/* 背景の明るさ調整オーバーレイ */}
+      {currentImage && backgroundBrightness !== 0 && (
+        <div
+          className="absolute inset-0 z-1"
+          style={{
+            backgroundColor: backgroundBrightness > 0 ? "white" : "black",
+            opacity: Math.abs(backgroundBrightness) / 100,
+          }}
+        />
       )}
     </div>
   );

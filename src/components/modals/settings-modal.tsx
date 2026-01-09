@@ -31,6 +31,8 @@ interface AppSettings {
   searchEngine: SearchEngine;
   /** アナログ時計を表示するか */
   showAnalogClock: boolean;
+  /** 背景の明るさ調整（-50から+50、0がデフォルト） */
+  backgroundBrightness: number;
 }
 
 /**
@@ -51,10 +53,6 @@ interface SettingsModalProps {
   settingsInterval: number;
   /** 画像変更間隔設定を更新する関数 */
   setSettingsInterval: (value: number) => void;
-  /** オーバーレイ表示設定 */
-  settingsShowOverlay: boolean;
-  /** オーバーレイ表示設定を更新する関数 */
-  setSettingsShowOverlay: (value: boolean) => void;
   /** 時間で変更設定 */
   settingsChangeByTime: boolean;
   /** 時間で変更設定を更新する関数 */
@@ -71,6 +69,10 @@ interface SettingsModalProps {
   settingsVideoChangeByTime: boolean;
   /** 動画を時間で変更する設定を更新する関数 */
   setSettingsVideoChangeByTime: (value: boolean) => void;
+  /** タブが非アクティブになったときに動画を停止する設定 */
+  settingsPauseVideoOnHidden: boolean;
+  /** タブが非アクティブになったときに動画を停止する設定を更新する関数 */
+  setSettingsPauseVideoOnHidden: (value: boolean) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
@@ -96,8 +98,6 @@ export const SettingsModal = ({
   setSettingsShuffle,
   settingsInterval,
   setSettingsInterval,
-  settingsShowOverlay,
-  setSettingsShowOverlay,
   settingsChangeByTime,
   setSettingsChangeByTime,
   settingsVideoChangeInterval,
@@ -106,13 +106,41 @@ export const SettingsModal = ({
   setSettingsVideoShuffle,
   settingsVideoChangeByTime,
   setSettingsVideoChangeByTime,
+  settingsPauseVideoOnHidden,
+  setSettingsPauseVideoOnHidden,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
   isCurrentMediaVideo,
 }: SettingsModalProps): React.ReactElement => {
   return (
-    <Dialog>
+    <>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            #backgroundBrightness::-webkit-slider-thumb {
+              appearance: none;
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #3b82f6;
+              cursor: pointer;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+            #backgroundBrightness::-moz-range-thumb {
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #3b82f6;
+              cursor: pointer;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+          `,
+        }}
+      />
+      <Dialog>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -246,6 +274,53 @@ export const SettingsModal = ({
                 </div>
               </div>
             </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-3">背景設定</h3>
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="backgroundBrightness" className="text-sm block mb-2">
+                    背景の明るさ調整
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-12">暗く</span>
+                    <input
+                      id="backgroundBrightness"
+                      type="range"
+                      min="-50"
+                      max="50"
+                      value={appSettings.backgroundBrightness}
+                      onChange={(e) =>
+                        updateAppSettings({
+                          backgroundBrightness: Number(e.target.value),
+                        })
+                      }
+                      className="flex-1 h-2 bg-blue-500 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((appSettings.backgroundBrightness + 50) / 100) * 100}%, #e5e7eb ${((appSettings.backgroundBrightness + 50) / 100) * 100}%, #e5e7eb 100%)`,
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground w-12">明るく</span>
+                  </div>
+                  <div className="mt-2">
+                    <Input
+                      type="number"
+                      min="-50"
+                      max="50"
+                      value={appSettings.backgroundBrightness}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value >= -50 && value <= 50) {
+                          updateAppSettings({
+                            backgroundBrightness: value,
+                          });
+                        }
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* 背景画像設定タブ */}
@@ -309,22 +384,9 @@ export const SettingsModal = ({
                     disabled={isCurrentMediaVideo || !settingsChangeByTime}
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="showOverlay"
-                    checked={settingsShowOverlay}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsShowOverlay(value);
-                      updateSettings({ showOverlay: value });
-                    }}
-                    className="size-4"
-                  />
-                  <label htmlFor="showOverlay" className="text-sm">
-                    背景画像の上にオーバーレイを表示
-                  </label>
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）
+                  </p>
               </div>
             </div>
           </TabsContent>
@@ -395,6 +457,22 @@ export const SettingsModal = ({
                     ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）
                   </p>
                 </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pauseVideoOnHidden"
+                    checked={settingsPauseVideoOnHidden}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setSettingsPauseVideoOnHidden(value);
+                      updateSettings({ pauseVideoOnHidden: value });
+                    }}
+                    className="size-4"
+                  />
+                  <label htmlFor="pauseVideoOnHidden" className="text-sm">
+                    タブが非アクティブになったときに動画を停止する
+                  </label>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -424,6 +502,7 @@ export const SettingsModal = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
