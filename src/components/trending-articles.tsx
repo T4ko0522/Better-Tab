@@ -233,7 +233,6 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
   const [expanded, setExpanded] = useState(false);
   const [height, setHeight] = useState(384); // デフォルト高さ（max-h-96 = 384px）
   const [isResizing, setIsResizing] = useState(false);
-  const [initialized, setInitialized] = useState(false); // 初期化フラグ
 
   useEffect(() => {
     // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
@@ -244,7 +243,6 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
     const savedExpanded = getSavedExpanded();
     setHeight(savedHeight);
     setExpanded(savedExpanded);
-    setInitialized(true);
 
     /**
      * トレンド記事を取得する
