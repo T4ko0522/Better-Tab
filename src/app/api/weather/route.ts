@@ -108,10 +108,6 @@ function formatDateLabel(date: Date, today: Date): string {
 
   if (diffDays === 0) {
     return "今日";
-  } else if (diffDays === 1) {
-    return "明日";
-  } else if (diffDays === 2) {
-    return "明後日";
   } else {
     const month = date.getMonth() + 1;
     const day = date.getDate();
