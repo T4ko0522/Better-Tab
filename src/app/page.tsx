@@ -9,6 +9,9 @@ import { Search } from "lucide-react";
 import { fileToDataUrl, generateVideoThumbnail } from "@/lib/image-utils";
 import { isVideoUrl, calculateBrightness } from "@/lib/media-utils";
 import { ImageCropper } from "@/components/image-cropper";
+import { VideoCompressionDialog } from "@/components/modals/video-compression-dialog";
+import { VideoCompressionProgressDialog } from "@/components/modals/video-compression-progress-dialog";
+import { getVideoCompressor, preloadFFmpeg, type CompressionQuality, type CompressionProgress } from "@/lib/video-compression";
 import { Clock } from "@/components/clock";
 import { Calendar } from "@/components/calendar";
 import { TrendingArticles } from "@/components/trending-articles";
@@ -37,6 +40,15 @@ export default function Home(): React.ReactElement {
   const [thumbnailCache, setThumbnailCache] = useState<Map<string, string>>(new Map());
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isLightBackground, setIsLightBackground] = useState(false);
+  const [compressionDialogOpen, setCompressionDialogOpen] = useState(false);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState<CompressionProgress>({
+    ratio: 0,
+    currentTime: 0,
+    totalDuration: 0,
+  });
+  const [compressionCancelled, setCompressionCancelled] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
@@ -49,6 +61,11 @@ export default function Home(): React.ReactElement {
         setSearchQuery(decodeURIComponent(queryParam));
       }
     }
+  }, []);
+
+  // FFmpegをバックグラウンドで事前ロード
+  React.useEffect(() => {
+    preloadFFmpeg();
   }, []);
 
   // ページ読み込み時に検索inputにフォーカス
@@ -212,14 +229,10 @@ export default function Home(): React.ReactElement {
     try {
       setIsUploading(true);
 
-      // 動画の場合は元ファイルをそのまま保存
+      // 動画の場合は圧縮確認ダイアログを表示
       if (isVideo) {
-        // 1. サムネイルを生成（すぐに背景として表示するため）
-        const thumbnail = await generateVideoThumbnail(file);
-
-        // 2. 元ファイルをData URLに変換して追加
-        const videoDataUrl = await fileToDataUrl(file);
-        addImage(videoDataUrl, thumbnail, file.name);
+        setSelectedVideoFile(file);
+        setCompressionDialogOpen(true);
       } else {
         // 画像の場合はトリミングモーダルを表示
         const dataUrl = await fileToDataUrl(file);
@@ -257,6 +270,97 @@ export default function Home(): React.ReactElement {
       alert("画像の追加に失敗しました");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  /**
+   * 動画圧縮を実行
+   *
+   * @param {CompressionQuality} quality - 圧縮品質
+   */
+  const handleCompress = async (quality: CompressionQuality): Promise<void> => {
+    if (!selectedVideoFile) return;
+
+    setCompressionDialogOpen(false);
+    setIsCompressing(true);
+    setCompressionProgress({ ratio: 0, currentTime: 0, totalDuration: 0 });
+    setCompressionCancelled(false);
+
+    try {
+      const compressor = getVideoCompressor();
+      const result = await compressor.compress(selectedVideoFile, quality, (progress) => {
+        // プログレス表示更新
+        if (!compressionCancelled) {
+          setCompressionProgress(progress);
+        }
+      });
+
+      // キャンセルされた場合は処理を中断
+      if (compressionCancelled) {
+        return;
+      }
+
+      // サムネイル生成
+      const thumbnail = await generateVideoThumbnail(result.compressedFile);
+
+      // Data URL変換してIndexedDBに保存
+      const videoDataUrl = await fileToDataUrl(result.compressedFile);
+      addImage(videoDataUrl, thumbnail, result.compressedFile.name);
+
+      // 完了通知
+      const formatSize = (bytes: number): string => {
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      };
+      alert(`動画を圧縮しました\n${formatSize(result.originalSize)} → ${formatSize(result.compressedSize)} (${result.compressionRatio.toFixed(0)}% 削減)`);
+    } catch (error) {
+      // キャンセルされた場合はエラーを無視
+      if (compressionCancelled) {
+        return;
+      }
+      console.error('Compression failed:', error);
+      const shouldContinue = confirm('動画の圧縮に失敗しました。元のファイルをアップロードしますか？');
+      if (shouldContinue) {
+        // エラー時のフォールバック処理
+        await handleSkipCompression();
+      }
+    } finally {
+      setIsCompressing(false);
+      setSelectedVideoFile(null);
+      setCompressionProgress({ ratio: 0, currentTime: 0, totalDuration: 0 });
+      setCompressionCancelled(false);
+    }
+  };
+
+  /**
+   * 圧縮をキャンセル
+   */
+  const handleCancelCompression = (): void => {
+    setCompressionCancelled(true);
+    setIsCompressing(false);
+    setSelectedVideoFile(null);
+    setCompressionProgress({ ratio: 0, currentTime: 0, totalDuration: 0 });
+  };
+
+  /**
+   * 圧縮をスキップして元の動画をアップロード
+   */
+  const handleSkipCompression = async (): Promise<void> => {
+    if (!selectedVideoFile) return;
+
+    setCompressionDialogOpen(false);
+    setIsUploading(true);
+
+    try {
+      // 元の動画をそのまま処理（既存の処理）
+      const thumbnail = await generateVideoThumbnail(selectedVideoFile);
+      const videoDataUrl = await fileToDataUrl(selectedVideoFile);
+      addImage(videoDataUrl, thumbnail, selectedVideoFile.name);
+    } catch (error) {
+      console.error('Failed to process video:', error);
+      alert('動画の処理に失敗しました');
+    } finally {
+      setIsUploading(false);
+      setSelectedVideoFile(null);
     }
   };
 
@@ -484,6 +588,31 @@ export default function Home(): React.ReactElement {
         }}
         open={cropperOpen}
       />
+
+      {/* 動画圧縮確認ダイアログ */}
+      {selectedVideoFile && (
+        <VideoCompressionDialog
+          open={compressionDialogOpen}
+          onClose={() => {
+            setCompressionDialogOpen(false);
+            setSelectedVideoFile(null);
+          }}
+          onCompress={handleCompress}
+          onSkip={handleSkipCompression}
+          fileName={selectedVideoFile.name}
+          fileSize={selectedVideoFile.size}
+        />
+      )}
+
+      {/* 動画圧縮進捗ダイアログ */}
+      {selectedVideoFile && (
+        <VideoCompressionProgressDialog
+          open={isCompressing}
+          onCancel={handleCancelCompression}
+          progress={compressionProgress}
+          originalSize={selectedVideoFile.size}
+        />
+      )}
     </div>
   );
 }
