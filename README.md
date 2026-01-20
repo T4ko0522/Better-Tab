@@ -66,6 +66,31 @@
 - `react-easy-crop`: 画像クロップ機能
 - `tailwindcss`: CSSフレームワーク
 
+## 🔨 ビルド
+
+### ローカル開発
+
+```bash
+# 依存関係のインストール
+pnpm install
+
+# 開発サーバーの起動
+pnpm dev
+```
+
+### 拡張機能用ビルド
+
+拡張機能用のビルドを実行する場合：
+
+```bash
+pnpm build:scripts
+
+# 拡張機能用のビルドを実行
+pnpm build:extension
+```
+
+**注意**: 通常の`build`コマンドを実行した後は、`.next`ディレクトリを削除してから`build:extension`を実行してください。
+
 ## 🌐 API
 
 このプロジェクトは以下のAPIを使用しています：
