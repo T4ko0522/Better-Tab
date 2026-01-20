@@ -145,9 +145,6 @@ export class VideoCompressor {
         // 検証エラーは警告として記録するが、処理は続行
       }
 
-      // 既存のプログレスリスナーをクリア
-      this.ffmpeg.off('progress');
-
       // プログレスリスナーを設定
       if (onProgress) {
         progressHandler = ({ progress, time }) => {
@@ -214,7 +211,7 @@ export class VideoCompressor {
         });
         throw new Error(`出力ファイルの読み取りに失敗しました: ${readError instanceof Error ? readError.message : String(readError)}`);
       }
-      const compressedBlob = new Blob([data], { type: 'video/mp4' });
+      const compressedBlob = new Blob([data as BlobPart], { type: 'video/mp4' });
       const compressedFile = new File(
         [compressedBlob],
         file.name.replace(/\.[^.]+$/, '.mp4'),
