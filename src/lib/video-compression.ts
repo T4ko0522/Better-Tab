@@ -16,6 +16,9 @@ export interface CompressionResult {
   compressionRatio: number; // 削減率（%）
 }
 
+/** x264 preset: 高速化のため veryfast。slow にするほど同ビットレートで画質up／容量downだが時間がかかる */
+const X264_PRESET = 'veryfast';
+
 const QUALITY_PRESETS = {
   medium: {
     maxResolution: { width: 1920, height: 1080 },
@@ -166,32 +169,23 @@ export class VideoCompressor {
       }
 
       // FFmpegコマンドを実行
-      // -i: 入力ファイル
-      // -c:v libx264: H.264コーデックを使用
-      // -b:v: ビデオビットレート
-      // -vf scale: 解像度制限
-      // -an: 音声トラックを削除（背景動画として使用するため音声は不要）
-      // -movflags +faststart: Web再生最適化（2パス処理でAborted()が発生する場合があるが、ファイルは正常に生成される）
-      console.log('[FFmpeg] Executing command:', [
+      // -preset veryfast: エンコード速度優先（既定のmediumより大幅に短時間）
+      // -i: 入力ファイル / -c:v libx264 / -b:v: ビデオビットレート
+      // -vf scale: 解像度制限 / -an: 音声削除 / -movflags +faststart: Web再生向け
+      const execArgs = [
         '-i', inputName,
         '-c:v', 'libx264',
+        '-preset', X264_PRESET,
         '-b:v', preset.videoBitrate,
         '-vf', `scale='min(${preset.maxResolution.width},iw)':'min(${preset.maxResolution.height},ih)':force_original_aspect_ratio=decrease`,
         '-an',
         '-movflags', '+faststart',
         outputName,
-      ]);
+      ];
+      console.log('[FFmpeg] Executing command:', execArgs);
 
       try {
-        await this.ffmpeg.exec([
-          '-i', inputName,
-          '-c:v', 'libx264',
-          '-b:v', preset.videoBitrate,
-          '-vf', `scale='min(${preset.maxResolution.width},iw)':'min(${preset.maxResolution.height},ih)':force_original_aspect_ratio=decrease`,
-          '-an',
-          '-movflags', '+faststart',
-          outputName,
-        ]);
+        await this.ffmpeg.exec(execArgs);
         console.log('[FFmpeg] Command execution completed successfully');
       } catch (execError) {
         // -movflags +faststart の2パス処理でAborted()が発生することがあるが、
