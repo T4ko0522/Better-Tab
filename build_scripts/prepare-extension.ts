@@ -213,5 +213,23 @@ if (fs.existsSync(iconPath)) {
   console.warn("アイコンファイルが見つかりません:", iconPath);
 }
 
+// FFmpeg core を同梱（拡張環境では blob: が CSP で禁止されるため）
+const FFMPEG_CORE_VERSION = "0.12.6";
+const ffmpegDir = path.join(extensionDir, "ffmpeg");
+fs.mkdirSync(ffmpegDir, { recursive: true });
+const baseUrl = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/umd`;
+for (const name of ["ffmpeg-core.js", "ffmpeg-core.wasm"]) {
+  const destPath = path.join(ffmpegDir, name);
+  try {
+    console.log(`FFmpeg core を取得中: ${name}`);
+    const res = await fetch(`${baseUrl}/${name}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(destPath, buf);
+  } catch (err) {
+    console.warn(`FFmpeg core の取得に失敗しました (${name}):`, err);
+  }
+}
+
 console.log("拡張機能の準備が完了しました！");
 console.log(`extensionディレクトリ: ${extensionDir}`);

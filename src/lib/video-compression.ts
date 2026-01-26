@@ -76,12 +76,20 @@ export class VideoCompressor {
       console.log('[FFmpeg]', message);
     });
 
-    // Core files をCDNから読み込み
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-    await this.ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    });
+    // 拡張環境では blob: が CSP で禁止されるため同梱済み core を getURL で読み込む
+    const isExtension =
+      typeof chrome !== 'undefined' && typeof chrome.runtime?.getURL === 'function';
+    let coreURL: string;
+    let wasmURL: string;
+    if (isExtension) {
+      coreURL = chrome.runtime.getURL('ffmpeg/ffmpeg-core.js');
+      wasmURL = chrome.runtime.getURL('ffmpeg/ffmpeg-core.wasm');
+    } else {
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+    }
+    await this.ffmpeg.load({ coreURL, wasmURL });
 
     this.isLoaded = true;
   }
