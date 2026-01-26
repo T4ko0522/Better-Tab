@@ -94,25 +94,31 @@ function getWeatherIcon(weatherCode: string): string {
   return "01d";
 }
 
+const JST = "Asia/Tokyo";
+
 /**
- * 日付を「今日」「明日」「明後日」などの表示に変換
+ * 日付をJSTの「YYYY-MM-DD」で取得（サーバーTZに依存しない）
  *
  * @param {Date} date - 日付
- * @param {Date} today - 今日の日付
+ * @returns {string} JSTでの日付文字列
+ */
+function getDateStringInJST(date: Date): string {
+  return date.toLocaleDateString("en-CA", { timeZone: JST });
+}
+
+/**
+ * 日付を「今日」または「M/D」に変換（JSTベース）
+ *
+ * @param {string} forecastDateJst - 予報日（JSTのYYYY-MM-DD）
+ * @param {string} todayJst - 今日（JSTのYYYY-MM-DD）
  * @returns {string} 日付の表示文字列
  */
-function formatDateLabel(date: Date, today: Date): string {
-  const diffDays = Math.floor(
-    (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays === 0) {
+function formatDateLabel(forecastDateJst: string, todayJst: string): string {
+  if (forecastDateJst === todayJst) {
     return "今日";
-  } else {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${month}/${day}`;
   }
+  const [, m, d] = forecastDateJst.split("-").map(Number);
+  return `${m}/${d}`;
 }
 
 /**
@@ -453,8 +459,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       precipitation?: string;
     }> = [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    const todayJst = getDateStringInJST(new Date());
 
     // 7日間予報がある場合はそれを使用、なければ短期予報を使用
     if (longTermData && longTermData.timeSeries && longTermData.timeSeries.length > 0) {
@@ -476,21 +481,18 @@ export async function GET(request: Request): Promise<NextResponse> {
             const timeStr = longTermTimeDefines[i];
 
             if (code && timeStr) {
-              const forecastDate = new Date(timeStr);
-              forecastDate.setHours(0, 0, 0, 0);
+              const forecastDateJst = getDateStringInJST(new Date(timeStr));
 
-              // 今日以降の予報のみ追加
-              if (forecastDate >= today) {
+              // 今日以降の予報のみ追加（JSTで比較）
+              if (forecastDateJst >= todayJst) {
                 const desc = getWeatherDescription(code);
 
                 // 対応する気温を取得
                 let tempInfo = "";
                 if (longTermTempArea && longTermTempTimeDefines.length > 0) {
-                  // 同じ日付の気温を探す
                   for (let j = 0; j < longTermTempTimeDefines.length; j++) {
-                    const tempDate = new Date(longTermTempTimeDefines[j]);
-                    tempDate.setHours(0, 0, 0, 0);
-                    if (tempDate.getTime() === forecastDate.getTime()) {
+                    const tempDateJst = getDateStringInJST(new Date(longTermTempTimeDefines[j]));
+                    if (tempDateJst === forecastDateJst) {
                       const minTemp = longTermTempArea.tempsMin?.[j];
                       const maxTemp = longTermTempArea.tempsMax?.[j];
                       if (minTemp && minTemp !== "" && maxTemp && maxTemp !== "") {
@@ -506,7 +508,7 @@ export async function GET(request: Request): Promise<NextResponse> {
                 }
 
                 futureForecast.push({
-                  time: formatDateLabel(forecastDate, today),
+                  time: formatDateLabel(forecastDateJst, todayJst),
                   description: desc,
                   icon: getWeatherIcon(code),
                   precipitation: tempInfo || undefined,
@@ -524,15 +526,14 @@ export async function GET(request: Request): Promise<NextResponse> {
           const timeStr = shortTermTimeDefines[i];
 
           if (code && timeStr) {
-            const forecastDate = new Date(timeStr);
-            forecastDate.setHours(0, 0, 0, 0);
+            const forecastDateJst = getDateStringInJST(new Date(timeStr));
 
-            // 今日以降の予報のみ追加
-            if (forecastDate >= today) {
+            // 今日以降の予報のみ追加（JSTで比較）
+            if (forecastDateJst >= todayJst) {
               const desc = getWeatherDescription(code);
 
               futureForecast.push({
-                time: formatDateLabel(forecastDate, today),
+                time: formatDateLabel(forecastDateJst, todayJst),
                 description: desc,
                 icon: getWeatherIcon(code),
               });
