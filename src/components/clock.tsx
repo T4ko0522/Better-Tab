@@ -645,21 +645,21 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
         </div>
       )}
       {!settings.showAnalogClock && !hideWeather && weatherLoading ? (
-        <div className="mt-2">
-          <div className="flex items-center gap-2">
-            <div className="size-8 bg-white/20 rounded" />
-            <div className="flex flex-col gap-1.5">
-              <div className="h-4 w-12 bg-white/20 rounded" />
-              <div className="h-3 w-32 bg-white/20 rounded" />
+        <div className="mt-2 text-base">
+          <div className="flex items-center gap-3">
+            <div className="size-10 bg-white/20 rounded" />
+            <div className="flex flex-col gap-2">
+              <div className="h-5 w-14 bg-white/20 rounded" />
+              <div className="h-4 w-36 bg-white/20 rounded" />
             </div>
           </div>
           <div className="mt-2 pt-2 border-t border-white/20">
-            <div className="text-xs text-white/80 mb-1">今後の予報</div>
-            <div className="space-y-1">
+            <div className="text-sm text-white/80 mb-1">今後の予報</div>
+            <div className="space-y-1.5">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <div className="size-4 bg-white/20 rounded" />
-                  <div className="h-3 w-24 bg-white/20 rounded" />
+                  <div className="size-5 bg-white/20 rounded" />
+                  <div className="h-4 w-28 bg-white/20 rounded" />
                 </div>
               ))}
             </div>
@@ -667,29 +667,29 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
         </div>
       ) : (
         !settings.showAnalogClock && !hideWeather && weather && (
-          <div className="mt-2">
-            <div className="flex items-center gap-2">
+          <div className="mt-2 text-base">
+            <div className="flex items-center gap-3">
               {getSunMoonIcon(
                 weather.description,
                 getTimeBasedIcon(weather.icon),
-                32
+                40
               ) || (
                 <Image
                   src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
                   alt={weather.description}
-                  width={32}
-                  height={32}
-                  className="size-8"
+                  width={40}
+                  height={40}
+                  className="size-10"
                   unoptimized
                 />
               )}
               <div className="flex flex-col">
                 {weather.temperature !== null && (
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-base font-medium text-white">
                     {weather.temperature}°C
                   </div>
                 )}
-                <div className="text-xs text-white">
+                <div className="text-sm text-white">
                   {weather.description}
                   {settings.showWeatherLocation && ` - ${weather.location}`}
                 </div>
@@ -697,14 +697,14 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
             </div>
             {weather.warnings && weather.warnings.length > 0 && (
               <div className="mt-2 pt-2 border-t border-white/20">
-                <div className="text-xs text-red-400 font-semibold mb-1">
+                <div className="text-sm text-red-400 font-semibold mb-1">
                   ⚠ 警報・注意報
                 </div>
                 <div className="space-y-1">
                   {weather.warnings.map((warning, index) => (
                     <div
                       key={index}
-                      className="text-xs text-red-300 bg-red-500/20 rounded px-2 py-1"
+                      className="text-sm text-red-300 bg-red-500/20 rounded px-2 py-1"
                     >
                       {warning.type}
                     </div>
@@ -714,30 +714,30 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
             )}
             {weather.futureForecast && weather.futureForecast.length > 0 && (
               <div className="mt-2 pt-2 border-t border-white/20">
-                <div className="text-xs text-white/80 mb-1">今後の予報</div>
-                <div className="space-y-1">
+                <div className="text-sm text-white/80 mb-1">今後の予報</div>
+                <div className="space-y-1.5">
                   {weather.futureForecast.map((forecast, index) => {
                     const sunMoonIcon = getSunMoonIcon(
                       forecast.description,
                       forecast.icon,
-                      16
+                      20
                     );
                     return (
                       <div
                         key={index}
-                        className="flex items-center gap-2 text-xs text-white"
+                        className="flex items-center gap-2 text-sm text-white"
                       >
                         {sunMoonIcon || (
                           <Image
                             src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
                             alt={forecast.description}
-                            width={16}
-                            height={16}
-                            className="size-4"
+                            width={20}
+                            height={20}
+                            className="size-5"
                             unoptimized
                           />
                         )}
-                        <span className="text-xs">
+                        <span className="text-sm">
                           {forecast.time}: {forecast.description}
                         </span>
                       </div>
