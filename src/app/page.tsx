@@ -282,6 +282,12 @@ export default function Home(): React.ReactElement {
     if (!selectedVideoFile) return;
 
     setCompressionDialogOpen(false);
+
+    if (quality === 'none') {
+      await handleSkipCompression();
+      return;
+    }
+
     setIsCompressing(true);
     setCompressionProgress({ ratio: 0, currentTime: 0, totalDuration: 0 });
     setCompressionCancelled(false);

@@ -1,7 +1,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
-export type CompressionQuality = 'low' | 'medium' | 'high';
+export type CompressionQuality = 'none' | 'medium' | 'high';
 
 export interface CompressionProgress {
   ratio: number; // 0-1
@@ -17,17 +17,13 @@ export interface CompressionResult {
 }
 
 const QUALITY_PRESETS = {
-  low: {
-    maxResolution: { width: 1280, height: 720 },
-    videoBitrate: '1M',
-  },
   medium: {
     maxResolution: { width: 1920, height: 1080 },
-    videoBitrate: '2.5M',
+    videoBitrate: '2M',
   },
   high: {
     maxResolution: { width: 1920, height: 1080 },
-    videoBitrate: '5M',
+    videoBitrate: '3.5M',
   },
 } as const;
 
@@ -128,6 +124,10 @@ export class VideoCompressor {
 
     if (!this.ffmpeg) {
       throw new Error('FFmpeg initialization failed');
+    }
+
+    if (quality === 'none') {
+      throw new Error('quality "none" must be handled by caller; do not call compress()');
     }
 
     const preset = QUALITY_PRESETS[quality];

@@ -24,11 +24,10 @@ export function VideoCompressionDialog({
   open,
   onClose,
   onCompress,
-  onSkip,
   fileName,
   fileSize,
 }: VideoCompressionDialogProps): React.ReactElement {
-  const [quality, setQuality] = useState<CompressionQuality>('medium');
+  const [quality, setQuality] = useState<CompressionQuality>('none');
 
   /**
    * ファイルサイズをフォーマットする
@@ -56,19 +55,21 @@ export function VideoCompressionDialog({
           <p className="text-sm">
             圧縮することでファイルサイズを削減し、より多くの動画を保存できるようになります。
           </p>
+          <p className="text-sm text-yellow-600 dark:text-yellow-500">
+            ※圧縮には時間がかかります。 <br/>※圧縮しない場合は無圧縮を選択して実行してください。
+          </p>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">圧縮品質:</label>
-            <div className="space-y-2">
+            <div className="space-y-2 accent-blue-500">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="radio"
-                  value="low"
-                  checked={quality === 'low'}
+                  value="none"
+                  checked={quality === 'none'}
                   onChange={(e) => setQuality(e.target.value as CompressionQuality)}
                   className="cursor-pointer"
                 />
-                <span className="text-sm">低品質 (最小サイズ)</span>
+                <span className="text-sm">無圧縮 (推奨)</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -78,7 +79,7 @@ export function VideoCompressionDialog({
                   onChange={(e) => setQuality(e.target.value as CompressionQuality)}
                   className="cursor-pointer"
                 />
-                <span className="text-sm">中品質 (推奨)</span>
+                <span className="text-sm">中品質 (圧縮時間: 4分~6分程度)</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -88,17 +89,14 @@ export function VideoCompressionDialog({
                   onChange={(e) => setQuality(e.target.value as CompressionQuality)}
                   className="cursor-pointer"
                 />
-                <span className="text-sm">高品質</span>
+                <span className="text-sm">高品質 (圧縮時間: 7分~10分程度)</span>
               </label>
             </div>
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onSkip}>
-              圧縮しない
-            </Button>
             <Button onClick={() => onCompress(quality)}>
-              圧縮する
+              実行する
             </Button>
           </div>
         </div>
