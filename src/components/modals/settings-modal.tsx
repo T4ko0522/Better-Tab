@@ -33,6 +33,8 @@ interface AppSettings {
   showAnalogClock: boolean;
   /** 背景の明るさ調整（-50から+50、0がデフォルト） */
   backgroundBrightness: number;
+  /** カレンダーに元号を表示するか */
+  showCalendarEra: boolean;
 }
 
 /**
@@ -206,6 +208,21 @@ export const SettingsModal = ({
                   />
                   <label htmlFor="showCalendar" className="text-sm">
                     カレンダーを表示
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="showCalendarEra"
+                    checked={appSettings.showCalendarEra}
+                    onChange={(e) =>
+                      updateAppSettings({ showCalendarEra: e.target.checked })
+                    }
+                    disabled={!appSettings.showCalendar}
+                    className="size-4"
+                  />
+                  <label htmlFor="showCalendarEra" className="text-sm">
+                    カレンダーに元号を表示
                   </label>
                 </div>
                 <div className="flex items-center gap-2">
