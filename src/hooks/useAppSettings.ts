@@ -29,6 +29,8 @@ export interface AppSettings {
   showAnalogClock: boolean;
   /** 背景の明るさ調整（-50から+50、0がデフォルト） */
   backgroundBrightness: number;
+  /** カレンダーに元号を表示するかどうか */
+  showCalendarEra: boolean;
 }
 
 /**
@@ -73,6 +75,7 @@ export function AppSettingsProvider({ children }: AppSettingsProviderProps): Rea
     searchEngine: "google",
     showAnalogClock: false,
     backgroundBrightness: 0,
+    showCalendarEra: false,
   });
 
   // 初期化: IndexedDBからデータを読み込む
@@ -129,6 +132,10 @@ export function AppSettingsProvider({ children }: AppSettingsProviderProps): Rea
               parsedSettings.backgroundBrightness > 50
             ) {
               parsedSettings.backgroundBrightness = 0;
+            }
+            // showCalendarEraが存在しない場合はデフォルト値（false）を使用
+            if (typeof parsedSettings.showCalendarEra !== "boolean") {
+              parsedSettings.showCalendarEra = false;
             }
             // IndexedDBからの初期化はuseEffectで行う必要がある
             setSettings(parsedSettings as AppSettings);
