@@ -34,6 +34,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* lg(1024px)とxl(1280px)の間 */
+  --breakpoint-lgxl: 72rem; /* 1152px */
+  /* 1500px以上で検索フォーム幅を絞る用 */
+  --breakpoint-3xl: 93.75rem; /* 1500px */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
