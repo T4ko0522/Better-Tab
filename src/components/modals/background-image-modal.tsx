@@ -13,20 +13,7 @@ import {
 import { ImagePlus, X, Upload } from "lucide-react";
 import { getDataUrlFromBlobUrl } from "@/hooks/useBackgroundImages";
 import { getThumbnailUrl, isVideoUrl, getDisplayUrl, truncateText } from "@/lib/media-utils";
-
-/**
- * 背景画像データの型
- */
-interface BackgroundImage {
-  /** 画像ID */
-  id: string;
-  /** 画像URL */
-  url: string;
-  /** サムネイルURL（オプション） */
-  thumbnail?: string;
-  /** 表示名（ファイル名またはURL、オプション） */
-  name?: string;
-}
+import type { BackgroundImage } from "@/types/background";
 
 /**
  * BackgroundImageModalコンポーネントのプロパティ
@@ -266,4 +253,3 @@ export const BackgroundImageModal = ({
     </Dialog>
   );
 };
-
