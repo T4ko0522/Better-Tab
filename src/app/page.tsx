@@ -27,12 +27,6 @@ import { Header } from "@/components/header";
 export default function Home(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [settingsShuffle, setSettingsShuffle] = useState(true);
-  const [settingsInterval, setSettingsInterval] = useState(5);
-  const [settingsChangeByTime, setSettingsChangeByTime] = useState(false);
-  const [settingsVideoChangeInterval, setSettingsVideoChangeInterval] = useState(24);
-  const [settingsVideoShuffle, setSettingsVideoShuffle] = useState(true);
-  const [settingsVideoChangeByTime, setSettingsVideoChangeByTime] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
@@ -370,17 +364,8 @@ export default function Home(): React.ReactElement {
     }
   };
 
-  /**
-   * 設定ダイアログを開いたときに現在の設定を反映する
-   */
-  const handleOpenSettings = (): void => {
-    setSettingsShuffle(settings.shuffle);
-    setSettingsInterval(settings.changeInterval);
-    setSettingsChangeByTime(settings.changeByTime);
-    setSettingsVideoChangeInterval(settings.videoChangeInterval);
-    setSettingsVideoShuffle(settings.videoShuffle);
-    setSettingsVideoChangeByTime(settings.videoChangeByTime);
-  };
+  /** 設定ダイアログを開いたときのハンドラー（必要に応じて拡張） */
+  const handleOpenSettings = (): void => {};
 
 
   // 背景スタイルを構築
@@ -509,23 +494,11 @@ export default function Home(): React.ReactElement {
           setThumbnailCache={setThumbnailCache}
           appSettings={appSettings}
           updateAppSettings={updateAppSettings}
+          backgroundSettings={settings}
           updateSettings={updateSettings}
-          settingsShuffle={settingsShuffle}
-          setSettingsShuffle={setSettingsShuffle}
-          settingsInterval={settingsInterval}
-          setSettingsInterval={setSettingsInterval}
-          settingsChangeByTime={settingsChangeByTime}
-          setSettingsChangeByTime={setSettingsChangeByTime}
-          settingsVideoChangeInterval={settingsVideoChangeInterval}
-          setSettingsVideoChangeInterval={setSettingsVideoChangeInterval}
-          settingsVideoShuffle={settingsVideoShuffle}
-          setSettingsVideoShuffle={setSettingsVideoShuffle}
-          settingsVideoChangeByTime={settingsVideoChangeByTime}
-          setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
           settingsTab={settingsTab}
           setSettingsTab={setSettingsTab}
           handleOpenSettings={handleOpenSettings}
-          isCurrentMediaVideo={isVideo}
         />
 
         {/* メインコンテンツエリア */}
