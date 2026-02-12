@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Settings, Github, Twitter } from "lucide-react";
 import type { SearchEngine } from "@/hooks/useAppSettings";
-import type { BackgroundSettings } from "@/hooks/useBackgroundImages";
+import type { BackgroundSettingsUpdate } from "@/types/background";
 
 /**
  * アプリ設定の型
@@ -37,6 +37,14 @@ interface AppSettings {
   showCalendarEra: boolean;
 }
 
+/** 背景設定（フックから取得した settings の型） */
+interface BackgroundSettingsShape {
+  backgroundAutoChange: {
+    enabled: boolean;
+    intervalMinutes: number;
+  };
+}
+
 /**
  * SettingsModalコンポーネントのプロパティ
  */
@@ -45,45 +53,21 @@ interface SettingsModalProps {
   appSettings: AppSettings;
   /** アプリ設定を更新する関数 */
   updateAppSettings: (settings: Partial<AppSettings>) => void;
-  /** 背景画像設定を更新する関数 */
-  updateSettings: (settings: Partial<BackgroundSettings>) => void;
-  /** シャッフル設定 */
-  settingsShuffle: boolean;
-  /** シャッフル設定を更新する関数 */
-  setSettingsShuffle: (value: boolean) => void;
-  /** 画像変更間隔設定 */
-  settingsInterval: number;
-  /** 画像変更間隔設定を更新する関数 */
-  setSettingsInterval: (value: number) => void;
-  /** 時間で変更設定 */
-  settingsChangeByTime: boolean;
-  /** 時間で変更設定を更新する関数 */
-  setSettingsChangeByTime: (value: boolean) => void;
-  /** 動画変更間隔設定 */
-  settingsVideoChangeInterval: number;
-  /** 動画変更間隔設定を更新する関数 */
-  setSettingsVideoChangeInterval: (value: number) => void;
-  /** 動画シャッフル設定 */
-  settingsVideoShuffle: boolean;
-  /** 動画シャッフル設定を更新する関数 */
-  setSettingsVideoShuffle: (value: boolean) => void;
-  /** 動画を時間で変更する設定 */
-  settingsVideoChangeByTime: boolean;
-  /** 動画を時間で変更する設定を更新する関数 */
-  setSettingsVideoChangeByTime: (value: boolean) => void;
+  /** 背景設定 */
+  backgroundSettings: BackgroundSettingsShape;
+  /** 背景設定を更新する関数 */
+  updateSettings: (settings: BackgroundSettingsUpdate) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
   setSettingsTab: (tab: string) => void;
   /** 設定を開いた時のハンドラー */
   handleOpenSettings: () => void;
-  /** 現在のメディアが動画かどうか */
-  isCurrentMediaVideo: boolean;
 }
 
 /**
  * 設定モーダルコンポーネント
- * アプリと背景画像の設定を管理する
+ * アプリと背景（画像・動画）の設定を管理する
  *
  * @param {SettingsModalProps} props - コンポーネントのプロパティ
  * @returns {React.ReactElement} 設定モーダル
@@ -91,24 +75,13 @@ interface SettingsModalProps {
 export const SettingsModal = ({
   appSettings,
   updateAppSettings,
+  backgroundSettings,
   updateSettings,
-  settingsShuffle,
-  setSettingsShuffle,
-  settingsInterval,
-  setSettingsInterval,
-  settingsChangeByTime,
-  setSettingsChangeByTime,
-  settingsVideoChangeInterval,
-  setSettingsVideoChangeInterval,
-  settingsVideoShuffle,
-  setSettingsVideoShuffle,
-  settingsVideoChangeByTime,
-  setSettingsVideoChangeByTime,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
-  isCurrentMediaVideo,
 }: SettingsModalProps): React.ReactElement => {
+  const ac = backgroundSettings.backgroundAutoChange;
   return (
     <>
       <style
@@ -155,11 +128,14 @@ export const SettingsModal = ({
             各種設定を変更できます
           </DialogDescription>
         </DialogHeader>
-        <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs
+          value={settingsTab === "video" ? "background" : settingsTab}
+          onValueChange={setSettingsTab}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="display">表示設定</TabsTrigger>
-            <TabsTrigger value="background">背景画像</TabsTrigger>
-            <TabsTrigger value="video">背景動画</TabsTrigger>
+            <TabsTrigger value="background">背景</TabsTrigger>
           </TabsList>
 
           {/* 表示設定タブ */}
@@ -334,138 +310,54 @@ export const SettingsModal = ({
             </div>
           </TabsContent>
 
-          {/* 背景画像設定タブ */}
+          {/* 背景設定タブ（画像・動画共通） */}
           <TabsContent value="background" className="space-y-6 mt-4">
             <div>
-              <h3 className="text-sm font-semibold mb-3">背景画像</h3>
-              {isCurrentMediaVideo && (
-                <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-3">
-                  ※ 現在の背景は動画のため、これらの設定は画像選択時のみ有効です。
-                </p>
-              )}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="changeByTime"
-                    checked={settingsChangeByTime}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsChangeByTime(value);
-                      updateSettings({ changeByTime: value });
-                    }}
-                    disabled={isCurrentMediaVideo}
-                    className="size-4"
-                  />
-                  <label htmlFor="changeByTime" className={`text-sm ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
-                    画像を時間で変更する
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="shuffle"
-                    checked={settingsShuffle}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsShuffle(value);
-                      updateSettings({ shuffle: value });
-                    }}
-                    disabled={isCurrentMediaVideo}
-                    className="size-4"
-                  />
-                  <label htmlFor="shuffle" className={`text-sm ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
-                    画像をランダムに変更
-                  </label>
-                </div>
-                <div>
-                  <label htmlFor="interval" className={`text-sm block mb-2 ${isCurrentMediaVideo ? "text-muted-foreground" : ""}`}>
-                    画像変更間隔（分）
-                  </label>
-                  <Input
-                    id="interval"
-                    type="number"
-                    min="1"
-                    value={settingsInterval}
-                    onChange={(e) => {
-                      const value = Number(e.target.value);
-                      setSettingsInterval(value);
-                      updateSettings({ changeInterval: value });
-                    }}
-                    disabled={isCurrentMediaVideo || !settingsChangeByTime}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                    ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）
-                  </p>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* 背景動画設定タブ */}
-          <TabsContent value="video" className="space-y-6 mt-4">
-            <div>
-              <h3 className="text-sm font-semibold mb-3">背景動画</h3>
+              <h3 className="text-sm font-semibold mb-3">背景の自動切り替え</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                動画を複数登録している場合、設定した時間間隔で自動的に切り替わります。
+                画像・動画をまとめて「背景」として扱い、設定した間隔でランダムに自動切り替えします。
               </p>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    id="videoChangeByTime"
-                    checked={settingsVideoChangeByTime}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsVideoChangeByTime(value);
-                      updateSettings({ videoChangeByTime: value });
-                    }}
+                    id="changeByTime"
+                    checked={ac.enabled}
+                    onChange={(e) =>
+                      updateSettings({
+                        backgroundAutoChange: { enabled: e.target.checked },
+                      })
+                    }
                     className="size-4"
                   />
-                  <label htmlFor="videoChangeByTime" className="text-sm">
-                    動画を時間で変更する
+                  <label htmlFor="changeByTime" className="text-sm">
+                    時間で切り替える（常にランダム）
                   </label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="videoShuffle"
-                    checked={settingsVideoShuffle}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setSettingsVideoShuffle(value);
-                      updateSettings({ videoShuffle: value });
-                    }}
-                    disabled={!settingsVideoChangeByTime}
-                    className="size-4"
-                  />
-                  <label htmlFor="videoShuffle" className={`text-sm ${!settingsVideoChangeByTime ? "text-muted-foreground" : ""}`}>
-                    動画をランダムに変更
-                  </label>
-                </div>
-                {!settingsVideoShuffle && settingsVideoChangeByTime && (
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    ※ 動画の自動変更がオフになっています。現在の動画が固定されます。
-                  </p>
-                )}
                 <div>
-                  <label htmlFor="videoChangeInterval" className={`text-sm block mb-2 ${!settingsVideoChangeByTime || !settingsVideoShuffle ? "text-muted-foreground" : ""}`}>
-                    動画変更間隔（時間）
+                  <label
+                    htmlFor="interval"
+                    className={`text-sm block mb-2 ${!ac.enabled ? "text-muted-foreground" : ""}`}
+                  >
+                    切り替え間隔（分）
                   </label>
                   <Input
-                    id="videoChangeInterval"
+                    id="interval"
                     type="number"
                     min="1"
-                    value={settingsVideoChangeInterval}
+                    value={ac.intervalMinutes}
                     onChange={(e) => {
                       const value = Number(e.target.value);
-                      setSettingsVideoChangeInterval(value);
-                      updateSettings({ videoChangeInterval: value });
+                      if (value >= 1) {
+                        updateSettings({
+                          backgroundAutoChange: { intervalMinutes: value },
+                        });
+                      }
                     }}
-                    disabled={!settingsVideoChangeByTime || !settingsVideoShuffle}
+                    disabled={!ac.enabled}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    ※ 時刻を参照して変更されます（タブを開いているかに関係なく動作）
+                    例: 5分・60分・1440分（24時間）。時刻を参照して切り替えます（タブを開いているかに関係なく動作）
                   </p>
                 </div>
               </div>
