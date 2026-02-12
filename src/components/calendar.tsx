@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { fetchHolidays as fetchHolidaysFromAPI } from "@/lib/extension-api";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 /**
  * 祝日データの型定義
@@ -23,6 +24,34 @@ const HOLIDAY_NAME_MAX_LENGTH = 6;
 function truncateHolidayName(name: string, maxLength: number = HOLIDAY_NAME_MAX_LENGTH): string {
   if (name.length <= maxLength) return name;
   return `${name.slice(0, maxLength)}...`;
+}
+
+/**
+ * 西暦年・月から元号文字列を取得する（例: 2024, 1 → "令和6年"）
+ * 令和: 2019年5月〜, 平成: 1989年〜2019年4月, 昭和: 1926年〜1988年
+ *
+ * @param {number} year - 西暦年
+ * @param {number} month - 月（0-11）
+ * @returns {string} 元号＋年（例: "令和6年"）、該当なしは空文字
+ */
+function getEraString(year: number, month: number): string {
+  // 令和は2019年5月（month === 4）から
+  if (year > 2019 || (year === 2019 && month >= 4)) {
+    return `令和${year - 2018}年`;
+  }
+  if (year >= 1989) {
+    return `平成${year - 1988}年`;
+  }
+  if (year >= 1926) {
+    return `昭和${year - 1925}年`;
+  }
+  if (year >= 1912) {
+    return `大正${year - 1911}年`;
+  }
+  if (year >= 1868) {
+    return `明治${year - 1867}年`;
+  }
+  return "";
 }
 
 /**
@@ -116,6 +145,7 @@ const saveHolidaysToStorage = (data: Holidays, year: number): void => {
  * @returns {React.ReactElement} カレンダーコンポーネント
  */
 export function Calendar({ isMobile = false }: CalendarProps): React.ReactElement {
+  const { settings } = useAppSettings();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   // localStorageからキャッシュを読み込む
@@ -353,7 +383,17 @@ export function Calendar({ isMobile = false }: CalendarProps): React.ReactElemen
     >
       <div className={`text-lg font-semibold mb-3 text-foreground ${isMobile ? "text-center" : ""}`}>
         <span className="md:hidden">{year}/{month + 1}</span>
+        {settings.showCalendarEra && (
+          <span className="md:hidden text-sm font-normal text-foreground/80 ml-1">
+            （{getEraString(year, month)}）
+          </span>
+        )}
         <span className="hidden md:inline">{year}年 {getMonthName(month)}</span>
+        {settings.showCalendarEra && (
+          <span className="hidden md:inline text-base font-normal text-foreground/80 ml-1">
+            （{getEraString(year, month)}）
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-7 gap-1 mb-2">
         {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
