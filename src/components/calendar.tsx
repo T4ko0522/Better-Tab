@@ -10,6 +10,21 @@ interface Holidays {
   [date: string]: string;
 }
 
+/** 休日名の最大表示文字数（超えたら省略） */
+const HOLIDAY_NAME_MAX_LENGTH = 6;
+
+/**
+ * 休日名を一定文字数で省略する
+ *
+ * @param {string} name - 休日名
+ * @param {number} maxLength - 最大文字数
+ * @returns {string} 省略後の文字列
+ */
+function truncateHolidayName(name: string, maxLength: number = HOLIDAY_NAME_MAX_LENGTH): string {
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength)}...`;
+}
+
 /**
  * カレンダーコンポーネントのprops
  */
@@ -19,6 +34,9 @@ interface CalendarProps {
    */
   isMobile?: boolean;
 }
+
+/** カレンダーコンポーネントの固定幅（px） */
+const CALENDAR_WIDTH = 320;
 
 // グローバルな祝日データキャッシュ（二重fetchを防ぐ）
 const holidaysCache: {
@@ -296,7 +314,10 @@ export function Calendar({ isMobile = false }: CalendarProps): React.ReactElemen
   // サーバーサイドレンダリング時は固定の構造を返す（ハイドレーションエラーを防ぐ）
   if (!mounted || !currentTime) {
     return (
-      <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-border">
+      <div
+        className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-border"
+        style={{ width: CALENDAR_WIDTH }}
+      >
         <div className="text-lg font-semibold mb-3 text-foreground">
           &nbsp;
         </div>
@@ -326,7 +347,10 @@ export function Calendar({ isMobile = false }: CalendarProps): React.ReactElemen
   }
 
   return (
-    <div className={`bg-white/90 dark:bg-black/30 backdrop-blur-sm rounded-lg border border-border ${isMobile ? "p-2 w-full max-w-xs mx-auto" : "p-4"}`}>
+    <div
+      className={`bg-white/90 dark:bg-black/30 backdrop-blur-sm rounded-lg border border-border shrink-0 ${isMobile ? "p-2 mx-auto" : "p-4"}`}
+      style={{ width: CALENDAR_WIDTH }}
+    >
       <div className={`text-lg font-semibold mb-3 text-foreground ${isMobile ? "text-center" : ""}`}>
         <span className="md:hidden">{year}/{month + 1}</span>
         <span className="hidden md:inline">{year}年 {getMonthName(month)}</span>
@@ -379,11 +403,12 @@ export function Calendar({ isMobile = false }: CalendarProps): React.ReactElemen
               <span className="text-center">{day}</span>
               {isHoliday && (
                 <span
-                  className={`${isMobile ? "text-[7px]" : "text-[8px]"} leading-tight mt-0.5 text-center ${
+                  className={`${isMobile ? "text-[7px]" : "text-[8px]"} leading-tight mt-0.5 text-center block overflow-hidden text-ellipsis whitespace-nowrap max-w-full ${
                     isToday ? "text-red-500" : ""
                   }`}
+                  title={holidays[dateStr]}
                 >
-                  {holidays[dateStr]}
+                  {truncateHolidayName(holidays[dateStr])}
                 </span>
               )}
             </div>
