@@ -92,6 +92,13 @@ function getTimeBasedIcon(icon: string): string {
   return icon.replace(/[dn]$/, suffix);
 }
 
+/** 時計のみ（天気なし）の固定幅（px） */
+const CLOCK_ONLY_WIDTH = 200;
+/** 時計＋天気の固定幅（px） */
+const CLOCK_WITH_WEATHER_WIDTH = 320;
+/** 天気セクションの固定幅（px） */
+const WEATHER_SECTION_WIDTH = 160;
+
 /**
  * 時計コンポーネントのprops
  */
@@ -442,8 +449,11 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
 
   if (!mounted) {
     return (
-      <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border">
-        <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "w-[200px] text-left"}`}>
+      <div
+        className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border shrink-0"
+        style={{ width: hideWeather ? CLOCK_ONLY_WIDTH : CLOCK_WITH_WEATHER_WIDTH }}
+      >
+        <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "text-left"}`}>
           00:00:00
         </div>
         <div className="text-sm text-white mt-1">読み込み中...</div>
@@ -451,8 +461,13 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
     );
   }
 
+  const clockWidth = hideWeather || !settings.showWeather ? CLOCK_ONLY_WIDTH : CLOCK_WITH_WEATHER_WIDTH;
+
   return (
-    <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border">
+    <div
+      className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border shrink-0"
+      style={{ width: clockWidth }}
+    >
       {settings.showAnalogClock ? (
         <div className={`flex gap-4 ${!hideWeather && settings.showWeather ? "flex-row items-center" : "flex-col items-center"}`}>
           {/* 左側: 時計部分 */}
@@ -530,7 +545,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
           </div>
           {/* 右側: 天気部分 */}
           {!hideWeather && settings.showWeather && (
-            <div className="shrink-0 text-base">
+            <div className="shrink-0 text-base min-w-0" style={{ width: WEATHER_SECTION_WIDTH }}>
               {weatherLoading ? (
                 <div>
                   <div className="flex items-center gap-3">
@@ -570,13 +585,13 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                           unoptimized
                         />
                       )}
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         {weather.temperature !== null && (
                           <div className="text-base font-medium text-white">
                             {weather.temperature}°C
                           </div>
                         )}
-                        <div className="text-sm text-white">
+                        <div className="text-sm text-white truncate" title={`${weather.description}${settings.showWeatherLocation ? ` - ${weather.location}` : ""}`}>
                           {weather.description}
                           {settings.showWeatherLocation && ` - ${weather.location}`}
                         </div>
@@ -591,7 +606,8 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                           {weather.warnings.map((warning, index) => (
                             <div
                               key={index}
-                              className="text-sm text-red-300 bg-red-500/20 rounded px-2 py-1"
+                              className="text-sm text-red-300 bg-red-500/20 rounded px-2 py-1 truncate"
+                              title={warning.type}
                             >
                               {warning.type}
                             </div>
@@ -609,10 +625,11 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                               forecast.icon,
                               20
                             );
+                            const forecastText = `${forecast.time}: ${forecast.description}`;
                             return (
                               <div
                                 key={index}
-                                className="flex items-center gap-2 text-sm text-white"
+                                className="flex items-center gap-2 text-sm text-white min-w-0"
                               >
                                 {sunMoonIcon || (
                                   <Image
@@ -620,12 +637,12 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                                     alt={forecast.description}
                                     width={20}
                                     height={20}
-                                    className="size-5"
+                                    className="size-5 shrink-0"
                                     unoptimized
                                   />
                                 )}
-                                <span className="text-sm">
-                                  {forecast.time}: {forecast.description}
+                                <span className="text-sm truncate" title={forecastText}>
+                                  {forecastText}
                                 </span>
                               </div>
                             );
@@ -640,7 +657,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
           )}
         </div>
       ) : (
-        <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "w-[200px] text-left"}`}>
+        <div className={`text-4xl font-bold text-white tabular-nums ${hideWeather ? "w-full text-center" : "text-left"}`}>
           {time}
         </div>
       )}
@@ -667,8 +684,8 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
         </div>
       ) : (
         !settings.showAnalogClock && !hideWeather && weather && (
-          <div className="mt-2 text-base">
-            <div className="flex items-center gap-3">
+          <div className="mt-2 text-base min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               {getSunMoonIcon(
                 weather.description,
                 getTimeBasedIcon(weather.icon),
@@ -683,13 +700,13 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                   unoptimized
                 />
               )}
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 {weather.temperature !== null && (
                   <div className="text-base font-medium text-white">
                     {weather.temperature}°C
                   </div>
                 )}
-                <div className="text-sm text-white">
+                <div className="text-sm text-white truncate" title={`${weather.description}${settings.showWeatherLocation ? ` - ${weather.location}` : ""}`}>
                   {weather.description}
                   {settings.showWeatherLocation && ` - ${weather.location}`}
                 </div>
@@ -704,7 +721,8 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                   {weather.warnings.map((warning, index) => (
                     <div
                       key={index}
-                      className="text-sm text-red-300 bg-red-500/20 rounded px-2 py-1"
+                      className="text-sm text-red-300 bg-red-500/20 rounded px-2 py-1 truncate"
+                      title={warning.type}
                     >
                       {warning.type}
                     </div>
@@ -722,10 +740,11 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                       forecast.icon,
                       20
                     );
+                    const forecastText = `${forecast.time}: ${forecast.description}`;
                     return (
                       <div
                         key={index}
-                        className="flex items-center gap-2 text-sm text-white"
+                        className="flex items-center gap-2 text-sm text-white min-w-0"
                       >
                         {sunMoonIcon || (
                           <Image
@@ -733,12 +752,12 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
                             alt={forecast.description}
                             width={20}
                             height={20}
-                            className="size-5"
+                            className="size-5 shrink-0"
                             unoptimized
                           />
                         )}
-                        <span className="text-sm">
-                          {forecast.time}: {forecast.description}
+                        <span className="text-sm truncate" title={forecastText}>
+                          {forecastText}
                         </span>
                       </div>
                     );
