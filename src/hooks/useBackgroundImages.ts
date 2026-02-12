@@ -2,40 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getItem, setItem, STORE_NAMES } from "@/lib/indexeddb-utils";
-
-/**
- * 背景画像の情報を表すインターフェース
- */
-export interface BackgroundImage {
-  /** 画像の一意なID */
-  id: string;
-  /** 画像のURL */
-  url: string;
-  /** サムネイル画像のURL（動画の場合に使用） */
-  thumbnail?: string;
-  /** 表示名（ファイル名またはURL） */
-  name?: string;
-}
-
-/**
- * 背景画像の設定を表すインターフェース
- */
-export interface BackgroundSettings {
-  /** ランダムにシャッフルするかどうか */
-  shuffle: boolean;
-  /** 画像変更間隔（分単位） */
-  changeInterval: number;
-  /** 画像を時間で変更するかどうか */
-  changeByTime: boolean;
-  /** 選択された画像のURL（永続化用） */
-  selectedImageUrl: string | null;
-  /** 動画変更間隔（時間単位） */
-  videoChangeInterval: number;
-  /** 動画をランダムに変更するかどうか */
-  videoShuffle: boolean;
-  /** 動画を時間で変更するかどうか */
-  videoChangeByTime: boolean;
-}
+import { isVideoMediaUrl } from "@/lib/media-type-utils";
+import type {
+  BackgroundImage,
+  BackgroundSettings,
+  BackgroundSettingsUpdate,
+  LegacyBackgroundSettings,
+} from "@/types/background";
 
 /**
  * 背景画像管理フックの戻り値の型
@@ -56,13 +29,88 @@ export interface UseBackgroundImagesReturn {
   /** 指定されたURLの画像を選択する関数 */
   selectImage: (url: string) => Promise<void>;
   /** 設定を更新する関数 */
-  updateSettings: (newSettings: Partial<BackgroundSettings>) => Promise<void>;
+  updateSettings: (newSettings: BackgroundSettingsUpdate) => Promise<void>;
 }
 
 const STORAGE_KEY_IMAGES = "images";
 const STORAGE_KEY_SETTINGS = "settings";
 const LOCALSTORAGE_KEY_CURRENT_THUMBNAIL = "current_thumbnail";
+const LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE = "last_media_change_time";
 const LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE = "last_video_change_time";
+
+const DEFAULT_BACKGROUND_SETTINGS: BackgroundSettings = {
+  selectedImageUrl: null,
+  backgroundAutoChange: {
+    enabled: false,
+    intervalMinutes: 5,
+  },
+};
+
+const normalizeBackgroundSettings = (raw: unknown): BackgroundSettings | null => {
+  if (!raw || typeof raw !== "object") return null;
+
+  const candidate = raw as Partial<BackgroundSettings> & LegacyBackgroundSettings;
+  const def = DEFAULT_BACKGROUND_SETTINGS.backgroundAutoChange;
+
+  if (candidate.backgroundAutoChange && typeof candidate.backgroundAutoChange === "object") {
+    const ac = candidate.backgroundAutoChange;
+    return {
+      selectedImageUrl:
+        typeof candidate.selectedImageUrl === "string" || candidate.selectedImageUrl === null
+          ? candidate.selectedImageUrl
+          : DEFAULT_BACKGROUND_SETTINGS.selectedImageUrl,
+      backgroundAutoChange: {
+        enabled: typeof ac.enabled === "boolean" ? ac.enabled : def.enabled,
+        intervalMinutes:
+          typeof ac.intervalMinutes === "number" ? ac.intervalMinutes : def.intervalMinutes,
+      },
+    };
+  }
+
+  if (candidate.imageAutoChange && candidate.videoAutoChange) {
+    const img = candidate.imageAutoChange;
+    const vid = candidate.videoAutoChange;
+    const enabled =
+      (typeof img.enabled === "boolean" && img.enabled) ||
+      (typeof vid.enabled === "boolean" && vid.enabled);
+    const intervalMinutes =
+      typeof img.intervalMinutes === "number"
+        ? img.intervalMinutes
+        : typeof vid.intervalHours === "number"
+          ? vid.intervalHours * 60
+          : def.intervalMinutes;
+    return {
+      selectedImageUrl:
+        typeof candidate.selectedImageUrl === "string" || candidate.selectedImageUrl === null
+          ? candidate.selectedImageUrl
+          : DEFAULT_BACKGROUND_SETTINGS.selectedImageUrl,
+      backgroundAutoChange: {
+        enabled,
+        intervalMinutes,
+      },
+    };
+  }
+
+  if (typeof candidate.shuffle === "boolean" && typeof candidate.changeInterval === "number") {
+    return {
+      selectedImageUrl:
+        typeof candidate.selectedImageUrl === "string" || candidate.selectedImageUrl === null
+          ? candidate.selectedImageUrl
+          : DEFAULT_BACKGROUND_SETTINGS.selectedImageUrl,
+      backgroundAutoChange: {
+        enabled:
+          typeof candidate.changeByTime === "boolean"
+            ? candidate.changeByTime
+            : typeof candidate.videoChangeByTime === "boolean"
+              ? candidate.videoChangeByTime
+              : def.enabled,
+        intervalMinutes: candidate.changeInterval,
+      },
+    };
+  }
+
+  return null;
+};
 
 /**
  * デフォルトの背景画像URLのリスト
@@ -199,15 +247,7 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   const [images, setImages] = useState<BackgroundImage[]>([]);
   // ハイドレーションミスマッチを避けるため、初期状態はnullにする
   const [currentImage, setCurrentImage] = useState<string | null>(null);
-  const [settings, setSettings] = useState<BackgroundSettings>({
-    shuffle: true,
-    changeInterval: 5,
-    changeByTime: false,
-    selectedImageUrl: null,
-    videoChangeInterval: 24,
-    videoShuffle: true,
-    videoChangeByTime: false,
-  });
+  const [settings, setSettings] = useState<BackgroundSettings>(DEFAULT_BACKGROUND_SETTINGS);
 
   // 初期化: IndexedDBからデータを読み込む
   useEffect(() => {
@@ -280,51 +320,10 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
         }
 
         if (storedSettings) {
-          const parsed = storedSettings as unknown;
-          if (
-            typeof parsed === "object" &&
-            parsed !== null &&
-            "shuffle" in parsed &&
-            "changeInterval" in parsed &&
-            typeof (parsed as { shuffle: unknown }).shuffle === "boolean" &&
-            typeof (parsed as { changeInterval: unknown }).changeInterval ===
-              "number"
-          ) {
-            // 既存の設定に不足している項目はデフォルト値を設定
-            const settingsWithDefaults: BackgroundSettings = {
-              shuffle: (parsed as { shuffle: unknown }).shuffle as boolean,
-              changeInterval: (parsed as {
-                changeInterval: unknown;
-              }).changeInterval as number,
-              changeByTime:
-                "changeByTime" in parsed &&
-                typeof (parsed as { changeByTime: unknown }).changeByTime ===
-                  "boolean"
-                  ? ((parsed as { changeByTime: unknown }).changeByTime as boolean)
-                  : false,
-              selectedImageUrl:
-                "selectedImageUrl" in parsed &&
-                (typeof (parsed as { selectedImageUrl: unknown }).selectedImageUrl === "string" ||
-                  (parsed as { selectedImageUrl: unknown }).selectedImageUrl === null)
-                  ? ((parsed as { selectedImageUrl: unknown }).selectedImageUrl as string | null)
-                  : null,
-              videoChangeInterval:
-                "videoChangeInterval" in parsed &&
-                typeof (parsed as { videoChangeInterval: unknown }).videoChangeInterval === "number"
-                  ? ((parsed as { videoChangeInterval: unknown }).videoChangeInterval as number)
-                  : 24,
-              videoShuffle:
-                "videoShuffle" in parsed &&
-                typeof (parsed as { videoShuffle: unknown }).videoShuffle === "boolean"
-                  ? ((parsed as { videoShuffle: unknown }).videoShuffle as boolean)
-                  : true,
-              videoChangeByTime:
-                "videoChangeByTime" in parsed &&
-                typeof (parsed as { videoChangeByTime: unknown }).videoChangeByTime === "boolean"
-                  ? ((parsed as { videoChangeByTime: unknown }).videoChangeByTime as boolean)
-                  : false,
-            };
+          const settingsWithDefaults = normalizeBackgroundSettings(storedSettings);
+          if (settingsWithDefaults) {
             setSettings(settingsWithDefaults);
+            void setItem(STORE_NAMES.BACKGROUND_SETTINGS, STORAGE_KEY_SETTINGS, settingsWithDefaults);
             
             // 選択された画像がある場合はそれを表示、なければ最初の画像を表示
             if (storedImages) {
@@ -337,41 +336,31 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 let targetUrl: string | null = null;
                 let selectedImg: BackgroundImage | undefined;
 
-                // 前回選択された画像が動画かどうかをチェック
-                const previousIsVideo = settingsWithDefaults.selectedImageUrl && (
-                  settingsWithDefaults.selectedImageUrl.startsWith("data:video/") ||
-                  (settingsWithDefaults.selectedImageUrl.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(settingsWithDefaults.selectedImageUrl))
-                );
-
-                // shuffleがオンで、画像が2枚以上ある場合は、前回と異なる画像をランダム選択
-                // ただし、動画の場合は時間ベースの変更なので即座に変更しない
-                if (settingsWithDefaults.shuffle && 
-                    !previousIsVideo &&
-                    imagesArray.length > 1 && 
-                    settingsWithDefaults.selectedImageUrl &&
-                    imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)) {
-                  // 前回の画像以外から選択（動画以外の画像のみ）
-                  const otherImages = imagesArray.filter((img) => 
-                    img.url !== settingsWithDefaults.selectedImageUrl &&
-                    !img.url.startsWith("data:video/") &&
-                    !(img.url.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(img.url))
+                // 時間で切り替えがオンで2件以上ある場合は、前回と異なる背景をランダム選択（画像・動画共通）
+                if (
+                  settingsWithDefaults.backgroundAutoChange.enabled &&
+                  imagesArray.length > 1 &&
+                  settingsWithDefaults.selectedImageUrl &&
+                  imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)
+                ) {
+                  const otherMedia = imagesArray.filter(
+                    (img) => img.url !== settingsWithDefaults.selectedImageUrl
                   );
-                  if (otherImages.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * otherImages.length);
-                    targetUrl = otherImages[randomIndex].url;
-                    selectedImg = otherImages[randomIndex];
+                  if (otherMedia.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * otherMedia.length);
+                    targetUrl = otherMedia[randomIndex].url;
+                    selectedImg = otherMedia[randomIndex];
                   } else {
-                    // 画像がなく動画のみの場合は、前回の選択を維持
                     targetUrl = settingsWithDefaults.selectedImageUrl;
                     selectedImg = imagesArray.find((img) => img.url === settingsWithDefaults.selectedImageUrl);
                   }
-                } else if (settingsWithDefaults.selectedImageUrl &&
-                    imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)) {
-                  // shuffleがオフの場合、または動画の場合は前回の画像を表示
+                } else if (
+                  settingsWithDefaults.selectedImageUrl &&
+                  imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)
+                ) {
                   targetUrl = settingsWithDefaults.selectedImageUrl;
                   selectedImg = imagesArray.find((img) => img.url === settingsWithDefaults.selectedImageUrl);
                 } else {
-                  // 選択された画像がない場合は最初の画像を表示
                   targetUrl = imagesArray[0].url;
                   selectedImg = imagesArray[0];
                 }
@@ -529,43 +518,27 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   };
 
   /**
-   * ランダムに画像を選択する
-   * 動画は除外し、画像のみを対象にする
-   * 画像が2枚以上ある場合は、現在の画像以外から選択する
+   * ランダムに背景を選択する（画像・動画の区別なし）
+   * 2件以上ある場合は現在表示中以外から選択する
    */
   const selectRandomImage = useCallback((): void => {
     if (images.length === 0) return;
-    
-    // 動画以外の画像のみをフィルタリング
-    const imageOnlyList = images.filter((img) => 
-      !img.url.startsWith("data:video/") &&
-      !(img.url.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(img.url))
-    );
-    
-    if (imageOnlyList.length === 0) return;
-    
-    // 現在の画像のData URLを取得
+
     let currentDataUrl: string | null = null;
     if (currentImage) {
-      if (currentImage.startsWith("blob:")) {
-        currentDataUrl = getDataUrlFromBlobUrl(currentImage);
-      } else {
-        currentDataUrl = currentImage;
-      }
+      currentDataUrl = currentImage.startsWith("blob:")
+        ? getDataUrlFromBlobUrl(currentImage)
+        : currentImage;
     }
-    
-    // 画像が2枚以上ある場合は、現在の画像以外から選択
-    let availableImages = imageOnlyList;
-    if (imageOnlyList.length > 1 && currentDataUrl) {
-      availableImages = imageOnlyList.filter((img) => img.url !== currentDataUrl);
-      // フィルタリング後に画像がない場合は、全画像から選択
-      if (availableImages.length === 0) {
-        availableImages = imageOnlyList;
-      }
+
+    let candidates = images;
+    if (images.length > 1 && currentDataUrl) {
+      candidates = images.filter((img) => img.url !== currentDataUrl);
+      if (candidates.length === 0) candidates = images;
     }
-    
-    const randomIndex = Math.floor(Math.random() * availableImages.length);
-    const targetUrl = availableImages[randomIndex].url;
+
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const targetUrl = candidates[randomIndex].url;
 
     // Data URLの場合はBlob URLに変換
     if (targetUrl.startsWith("data:")) {
@@ -607,13 +580,14 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
         }
       }
 
-      // 動画の場合は最後の変更時刻を保存
-      if (url.startsWith("data:video/") || (url.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(url))) {
-        try {
-          localStorage.setItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE, Date.now().toString());
-        } catch (error) {
-          console.error("Failed to save last video change time:", error);
-        }
+      // 自動切り替え判定用に、最後の変更時刻を更新
+      try {
+        const now = Date.now().toString();
+        localStorage.setItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE, now);
+        // 既存キーとの互換維持
+        localStorage.setItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE, now);
+      } catch (error) {
+        console.error("Failed to save last media change time:", error);
       }
 
       // Blob URLを設定（一度だけ設定）
@@ -633,12 +607,19 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
   /**
    * 背景画像の設定を更新する
    *
-   * @param {Partial<BackgroundSettings>} newSettings - 更新する設定の一部
+   * @param {BackgroundSettingsUpdate} newSettings - 更新する設定の一部
    */
   const updateSettings = async (
-    newSettings: Partial<BackgroundSettings>
+    newSettings: BackgroundSettingsUpdate
   ): Promise<void> => {
-    const updated = { ...settings, ...newSettings };
+    const updated: BackgroundSettings = {
+      ...settings,
+      ...newSettings,
+      backgroundAutoChange: {
+        ...settings.backgroundAutoChange,
+        ...newSettings.backgroundAutoChange,
+      },
+    };
     setSettings(updated);
     try {
       await setItem(STORE_NAMES.BACKGROUND_SETTINGS, STORAGE_KEY_SETTINGS, updated);
@@ -647,119 +628,67 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
     }
   };
 
-  // 画像変更間隔のタイマー（changeByTimeがtrueの場合のみ）
-  // 動画の場合は自動切り替えを行わない
+  // 背景自動切り替え（画像・動画共通の1設定）
   useEffect(() => {
-    if (!settings.changeByTime || !settings.shuffle || images.length <= 1 || !settings.changeInterval) return;
+    const checkAndChangeMedia = (): void => {
+      if (!currentImage) return;
+      if (images.length <= 1) return;
 
-    // 現在の背景が動画かどうかをチェック
-    if (currentImage) {
-      // Blob URLの場合は元のData URLを取得
+      const { enabled, intervalMinutes } = settings.backgroundAutoChange;
+      if (!enabled || !intervalMinutes) return;
+
+      const intervalMs = intervalMinutes * 60 * 1000;
+
       let urlToCheck = currentImage;
       if (currentImage.startsWith("blob:")) {
         const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
-        if (originalDataUrl) {
-          urlToCheck = originalDataUrl;
-        }
+        if (originalDataUrl) urlToCheck = originalDataUrl;
       }
-      
-      // 動画の場合は自動切り替えしない
-      if (urlToCheck.startsWith("data:video/")) {
-        return;
-      }
-      
-      // URLの場合も動画形式かチェック
+
+      const isVideoMedia = isVideoMediaUrl(urlToCheck);
+      const targetMedia = images.filter((img) =>
+        isVideoMedia ? isVideoMediaUrl(img.url) : !isVideoMediaUrl(img.url)
+      );
+      if (targetMedia.length <= 1) return;
+
       try {
-        const urlObj = new URL(urlToCheck);
-        const pathname = urlObj.pathname.toLowerCase();
-        if (/\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(pathname)) {
+        const lastChangeTimeStr =
+          localStorage.getItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE) ??
+          localStorage.getItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE);
+
+        if (!lastChangeTimeStr) {
+          localStorage.setItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE, Date.now().toString());
           return;
         }
-      } catch {
-        // URLとして解析できない場合は続行
-      }
-    }
 
-    const interval = setInterval(() => {
-      selectRandomImage();
-    }, settings.changeInterval * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [settings.changeByTime, settings.shuffle, settings.changeInterval, images.length, selectRandomImage, currentImage]);
-
-  // 動画の時刻ベース変更チェック（1時間ごとにチェック）
-  useEffect(() => {
-    // videoChangeByTimeがfalse、またはvideoShuffleがfalseの場合は動画変更を行わない
-    if (!settings.videoChangeByTime || !settings.videoShuffle || images.length <= 1 || !settings.videoChangeInterval) return;
-
-    /**
-     * 動画を変更すべきかチェックして、必要なら変更する
-     */
-    const checkAndChangeVideo = (): void => {
-      if (!currentImage) return;
-
-      // Blob URLの場合は元のData URLを取得
-      let urlToCheck = currentImage;
-      if (currentImage.startsWith("blob:")) {
-        const originalDataUrl = getDataUrlFromBlobUrl(currentImage);
-        if (originalDataUrl) {
-          urlToCheck = originalDataUrl;
+        const lastChangeTime = parseInt(lastChangeTimeStr, 10);
+        if (Number.isNaN(lastChangeTime)) {
+          localStorage.setItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE, Date.now().toString());
+          return;
         }
-      }
 
-      // 動画かどうかをチェック
-      const isVideoMedia = urlToCheck.startsWith("data:video/") || (urlToCheck.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(urlToCheck));
-      
-      if (!isVideoMedia) return;
-
-      // 動画のリストを取得
-      const videoImages = images.filter((img) => 
-        img.url.startsWith("data:video/") || 
-        (img.url.startsWith("http") && /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(img.url))
-      );
-
-      if (videoImages.length <= 1) return;
-
-      // 最後の変更時刻を取得
-      try {
-        const lastChangeTimeStr = localStorage.getItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE);
-        if (lastChangeTimeStr) {
-          const lastChangeTime = parseInt(lastChangeTimeStr, 10);
-          const currentTime = Date.now();
-          const elapsedHours = (currentTime - lastChangeTime) / (1000 * 60 * 60);
-
-          // 設定された時間を超えていたら動画を変更
-          if (elapsedHours >= settings.videoChangeInterval) {
-            if (settings.videoShuffle) {
-              // ランダムに別の動画を選択
-              const otherVideos = videoImages.filter((img) => img.url !== urlToCheck);
-              if (otherVideos.length > 0) {
-                const randomIndex = Math.floor(Math.random() * otherVideos.length);
-                void selectImage(otherVideos[randomIndex].url);
-              }
-            } else {
-              // 順番に次の動画を選択
-              const currentIndex = videoImages.findIndex((img) => img.url === urlToCheck);
-              if (currentIndex !== -1) {
-                const nextIndex = (currentIndex + 1) % videoImages.length;
-                void selectImage(videoImages[nextIndex].url);
-              }
-            }
-          }
+        if (Date.now() - lastChangeTime >= intervalMs) {
+          const candidates = targetMedia.filter((img) => img.url !== urlToCheck);
+          if (candidates.length === 0) return;
+          const randomIndex = Math.floor(Math.random() * candidates.length);
+          void selectImage(candidates[randomIndex].url);
         }
       } catch (error) {
-        console.error("Failed to check video change time:", error);
+        console.error("Failed to check media change time:", error);
       }
     };
 
-    // 初回チェック
-    checkAndChangeVideo();
-
-    // 1時間ごとにチェック
-    const interval = setInterval(checkAndChangeVideo, 60 * 60 * 1000);
+    checkAndChangeMedia();
+    const interval = setInterval(checkAndChangeMedia, 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [currentImage, images, settings.videoChangeInterval, settings.videoShuffle, settings.videoChangeByTime, selectImage]);
+  }, [
+    currentImage,
+    images,
+    settings.backgroundAutoChange.enabled,
+    settings.backgroundAutoChange.intervalMinutes,
+    selectImage,
+  ]);
 
   return {
     images,

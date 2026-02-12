@@ -1,4 +1,5 @@
 import { getCachedBlobUrl } from "@/hooks/useBackgroundImages";
+import { isImageMediaUrl, isVideoMediaUrl } from "@/lib/media-type-utils";
 
 /**
  * サムネイル用のBlob URLを取得（キャッシュ付き）
@@ -43,16 +44,13 @@ export const getThumbnailUrl = (
  * @returns {boolean} 動画の場合はtrue
  */
 export const isVideoUrl = (url: string): boolean => {
-  if (url.startsWith("data:video/")) {
-    return true;
-  }
-  try {
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname.toLowerCase();
-    return /\.(mp4|mov|webm|avi|mkv|ogg|ogv|flv|wmv)$/i.test(pathname);
-  } catch {
-    return false;
-  }
+  return isVideoMediaUrl(url);
+};
+
+export const isVideo = isVideoUrl;
+
+export const isImage = (url: string): boolean => {
+  return isImageMediaUrl(url);
 };
 
 /**
