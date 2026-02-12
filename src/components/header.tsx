@@ -4,22 +4,8 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { BackgroundImageModal } from "@/components/modals/background-image-modal";
 import { SettingsModal } from "@/components/modals/settings-modal";
-import type { BackgroundSettings } from "@/hooks/useBackgroundImages";
+import type { BackgroundImage, BackgroundSettingsUpdate } from "@/types/background";
 import type { AppSettings } from "@/hooks/useAppSettings";
-
-/**
- * 背景画像データの型
- */
-interface BackgroundImage {
-  /** 画像ID */
-  id: string;
-  /** 画像URL */
-  url: string;
-  /** サムネイルURL（オプション） */
-  thumbnail?: string;
-  /** 表示名（ファイル名またはURL、オプション） */
-  name?: string;
-}
 
 /**
  * Headerコンポーネントのプロパティ
@@ -53,40 +39,21 @@ interface HeaderProps {
   appSettings: AppSettings;
   /** アプリ設定を更新する関数 */
   updateAppSettings: (settings: Partial<AppSettings>) => void;
-  /** 背景画像設定を更新する関数 */
-  updateSettings: (settings: Partial<BackgroundSettings>) => void;
-  /** シャッフル設定 */
-  settingsShuffle: boolean;
-  /** シャッフル設定を更新する関数 */
-  setSettingsShuffle: (value: boolean) => void;
-  /** 画像変更間隔設定 */
-  settingsInterval: number;
-  /** 画像変更間隔設定を更新する関数 */
-  setSettingsInterval: (value: number) => void;
-  /** 時間で変更設定 */
-  settingsChangeByTime: boolean;
-  /** 時間で変更設定を更新する関数 */
-  setSettingsChangeByTime: (value: boolean) => void;
-  /** 動画変更間隔設定 */
-  settingsVideoChangeInterval: number;
-  /** 動画変更間隔設定を更新する関数 */
-  setSettingsVideoChangeInterval: (value: number) => void;
-  /** 動画シャッフル設定 */
-  settingsVideoShuffle: boolean;
-  /** 動画シャッフル設定を更新する関数 */
-  setSettingsVideoShuffle: (value: boolean) => void;
-  /** 動画を時間で変更する設定 */
-  settingsVideoChangeByTime: boolean;
-  /** 動画を時間で変更する設定を更新する関数 */
-  setSettingsVideoChangeByTime: (value: boolean) => void;
+  /** 背景設定（useBackgroundImages の settings） */
+  backgroundSettings: {
+    backgroundAutoChange: {
+      enabled: boolean;
+      intervalMinutes: number;
+    };
+  };
+  /** 背景設定を更新する関数 */
+  updateSettings: (settings: BackgroundSettingsUpdate) => void;
   /** 現在のタブ */
   settingsTab: string;
   /** タブを変更する関数 */
   setSettingsTab: (tab: string) => void;
   /** 設定を開いた時のハンドラー */
   handleOpenSettings: () => void;
-  /** 現在のメディアが動画かどうか */
-  isCurrentMediaVideo: boolean;
 }
 
 /**
@@ -111,23 +78,11 @@ export const Header = ({
   setThumbnailCache,
   appSettings,
   updateAppSettings,
+  backgroundSettings,
   updateSettings,
-  settingsShuffle,
-  setSettingsShuffle,
-  settingsInterval,
-  setSettingsInterval,
-  settingsChangeByTime,
-  setSettingsChangeByTime,
-  settingsVideoChangeInterval,
-  setSettingsVideoChangeInterval,
-  settingsVideoShuffle,
-  setSettingsVideoShuffle,
-  settingsVideoChangeByTime,
-  setSettingsVideoChangeByTime,
   settingsTab,
   setSettingsTab,
   handleOpenSettings,
-  isCurrentMediaVideo,
 }: HeaderProps): React.ReactElement => {
   return (
     <header className="flex justify-center md:justify-end items-start p-6 gap-4">
@@ -149,23 +104,11 @@ export const Header = ({
       <SettingsModal
         appSettings={appSettings}
         updateAppSettings={updateAppSettings}
+        backgroundSettings={backgroundSettings}
         updateSettings={updateSettings}
-        settingsShuffle={settingsShuffle}
-        setSettingsShuffle={setSettingsShuffle}
-        settingsInterval={settingsInterval}
-        setSettingsInterval={setSettingsInterval}
-        settingsChangeByTime={settingsChangeByTime}
-        setSettingsChangeByTime={setSettingsChangeByTime}
-        settingsVideoChangeInterval={settingsVideoChangeInterval}
-        setSettingsVideoChangeInterval={setSettingsVideoChangeInterval}
-        settingsVideoShuffle={settingsVideoShuffle}
-        setSettingsVideoShuffle={setSettingsVideoShuffle}
-        settingsVideoChangeByTime={settingsVideoChangeByTime}
-        setSettingsVideoChangeByTime={setSettingsVideoChangeByTime}
         settingsTab={settingsTab}
         setSettingsTab={setSettingsTab}
         handleOpenSettings={handleOpenSettings}
-        isCurrentMediaVideo={isCurrentMediaVideo}
       />
 
       <Button
