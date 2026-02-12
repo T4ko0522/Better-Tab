@@ -504,7 +504,7 @@ export default function Home(): React.ReactElement {
         {/* メインコンテンツエリア */}
         <main className="flex-1 flex flex-col items-center px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 md:justify-center">
           {/* 検索ボックス */}
-          <form onSubmit={handleSearch} id="search-form" className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mb-4 sm:mb-6 md:mb-8">
+          <form onSubmit={handleSearch} id="search-form" className="w-full sm:max-w-[400px] md:max-w-[200px] lg:max-w-[330px] lgxl:max-w-[450px] xl:max-w-[580px] 3xl:max-w-[800px] mb-4 sm:mb-6 md:mb-8">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search 
@@ -534,9 +534,9 @@ export default function Home(): React.ReactElement {
             </div>
           </form>
 
-          {/* スマホ: 時計とカレンダー（縦並び、中央揃え） */}
+          {/* スマホ: 時計とカレンダー（縦並び、中央揃え・アナログ時計はオフ） */}
           <div className="md:hidden w-full flex flex-col items-center gap-4 mb-6">
-            <Clock hideWeather={true} />
+            <Clock hideWeather={true} forceDigital={true} />
             {appSettings.showCalendar && <Calendar isMobile={true} />}
           </div>
 
