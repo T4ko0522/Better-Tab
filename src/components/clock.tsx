@@ -127,8 +127,26 @@ const weatherCache: {
   promise: null,
 };
 
+const JST = "Asia/Tokyo";
+
+/**
+ * 現在のJST基準のキャッシュスロットキーを取得する
+ * 0:00〜11:59 → "YYYY-MM-DD-0", 12:00〜23:59 → "YYYY-MM-DD-12"
+ * 0時と12時にキャッシュを更新するために使用
+ *
+ * @returns {string} キャッシュスロットキー
+ */
+function getJstCacheSlotKey(): string {
+  const now = new Date();
+  const jstDateStr = now.toLocaleDateString("en-CA", { timeZone: JST });
+  const jstHours = new Date(now.toLocaleString("en-US", { timeZone: JST })).getHours();
+  const slot = jstHours < 12 ? "0" : "12";
+  return `${jstDateStr}-${slot}`;
+}
+
 /**
  * localStorageから天気データを取得
+ * キャッシュはJST 0時・12時を境に無効化される
  *
  * @returns {WeatherData | null} キャッシュされた天気データ、またはnull
  */
@@ -145,21 +163,18 @@ const getWeatherFromStorage = (): WeatherData | null => {
 
     const parsed = JSON.parse(cached) as {
       data: WeatherData;
-      timestamp: number;
+      cacheSlotKey?: string;
+      timestamp?: number;
     };
 
-    // キャッシュの有効期限は1時間（3600000ミリ秒）
-    const CACHE_DURATION = 3600000;
-    const now = Date.now();
-    if (now - parsed.timestamp > CACHE_DURATION) {
-      // キャッシュが期限切れの場合は削除
+    const currentSlot = getJstCacheSlotKey();
+    if (parsed.cacheSlotKey !== currentSlot) {
       localStorage.removeItem("weather_cache");
       return null;
     }
 
     return parsed.data;
   } catch {
-    // パースエラーの場合はキャッシュを削除
     localStorage.removeItem("weather_cache");
     return null;
   }
@@ -167,6 +182,7 @@ const getWeatherFromStorage = (): WeatherData | null => {
 
 /**
  * localStorageに天気データを保存
+ * 現在のJSTスロット（0時 or 12時基準）で保存する
  *
  * @param {WeatherData} data - 保存する天気データ
  */
@@ -178,7 +194,7 @@ const saveWeatherToStorage = (data: WeatherData): void => {
   try {
     const cacheData = {
       data,
-      timestamp: Date.now(),
+      cacheSlotKey: getJstCacheSlotKey(),
     };
     localStorage.setItem("weather_cache", JSON.stringify(cacheData));
   } catch (error) {
