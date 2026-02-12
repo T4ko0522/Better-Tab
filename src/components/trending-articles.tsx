@@ -419,28 +419,28 @@ export function TrendingArticles({ isLightBackground = false }: { isLightBackgro
     return <div />;
   }
 
-  const displayedArticles = expanded ? articles : articles.slice(0, 3);
+  const displayedArticles = articles;
   const hasMore = articles.length > 3;
 
   return (
     <div
       className={`md:fixed md:bottom-6 md:right-6 w-full md:w-80 bg-black/30 backdrop-blur-sm rounded-lg border border-border z-20 ${
         expanded ? 'flex flex-col' : ''
-      } ${!expanded ? 'max-h-96 overflow-hidden' : ''}`}
+      } ${!expanded ? 'flex flex-col h-96' : ''}`}
       style={expanded && mounted ? { height: `${height}px` } : {}}
     >
       {/* リサイズハンドル（展開時のみ表示） */}
       {expanded && (
         <div
-          className="w-full h-2 cursor-ns-resize hover:bg-white/10 rounded-t-lg flex items-center justify-center"
+          className="w-full h-2 cursor-ns-resize hover:bg-white/10 rounded-t-lg flex items-center justify-center shrink-0"
           onMouseDown={() => setIsResizing(true)}
         >
           <div className="w-12 h-1 bg-white/30 rounded-full" />
         </div>
       )}
 
-      {/* コンテンツエリア */}
-      <div className={`${expanded ? 'flex-1 overflow-y-auto' : 'overflow-hidden'} scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
+      {/* コンテンツエリア（折りたたみ時もスクロール可能） */}
+      <div className={`flex-1 min-h-0 overflow-y-auto scrollbar-hide p-4 ${expanded ? 'pt-2' : ''}`}>
       <button
         onClick={handleExpandToggle}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80"
