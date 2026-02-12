@@ -107,6 +107,10 @@ interface ClockProps {
    * 天気を非表示にするかどうか
    */
   hideWeather?: boolean;
+  /**
+   * true のときアナログ時計を無効化しデジタルのみ表示（例: スマホ用）
+   */
+  forceDigital?: boolean;
 }
 
 /**
@@ -202,7 +206,7 @@ const saveWeatherToStorage = (data: WeatherData): void => {
   }
 };
 
-export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
+export function Clock({ hideWeather = false, forceDigital = false }: ClockProps): React.ReactElement {
   const [time, setTime] = useState<string>("00:00:00");
   const [mounted, setMounted] = useState(false);
   // localStorageからキャッシュを読み込む
@@ -218,6 +222,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
   });
   const [weatherLoading, setWeatherLoading] = useState(!weatherCache.data && weatherCache.loading);
   const { settings } = useAppSettings();
+  const showAnalog = settings.showAnalogClock && !forceDigital;
 
   useEffect(() => {
     // クライアントサイドでのみ実行（ハイドレーションエラーを防ぐ）
@@ -446,7 +451,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
 
   // アナログ時計の角度を更新
   useEffect(() => {
-    if (!settings.showAnalogClock) {
+    if (!showAnalog) {
       return;
     }
 
@@ -461,7 +466,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
     const interval = setInterval(updateAnalogClock, 16);
 
     return () => clearInterval(interval);
-  }, [settings.showAnalogClock]);
+  }, [showAnalog]);
 
   if (!mounted) {
     return (
@@ -484,7 +489,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
       className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border shrink-0"
       style={{ width: clockWidth }}
     >
-      {settings.showAnalogClock ? (
+      {showAnalog ? (
         <div className={`flex gap-4 ${!hideWeather && settings.showWeather ? "flex-row items-center" : "flex-col items-center"}`}>
           {/* 左側: 時計部分 */}
           <div className="flex flex-col items-center gap-3">
@@ -677,7 +682,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
           {time}
         </div>
       )}
-      {!settings.showAnalogClock && !hideWeather && weatherLoading ? (
+      {!showAnalog && !hideWeather && weatherLoading ? (
         <div className="mt-2 text-base">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-white/20 rounded" />
@@ -699,7 +704,7 @@ export function Clock({ hideWeather = false }: ClockProps): React.ReactElement {
           </div>
         </div>
       ) : (
-        !settings.showAnalogClock && !hideWeather && weather && (
+        !showAnalog && !hideWeather && weather && (
           <div className="mt-2 text-base min-w-0">
             <div className="flex items-center gap-3 min-w-0">
               {getSunMoonIcon(
