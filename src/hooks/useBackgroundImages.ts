@@ -336,21 +336,49 @@ export function useBackgroundImages(): UseBackgroundImagesReturn {
                 let targetUrl: string | null = null;
                 let selectedImg: BackgroundImage | undefined;
 
-                // 時間で切り替えがオンで2件以上ある場合は、前回と異なる背景をランダム選択（画像・動画共通）
+                // 時間経過時のみ切り替える（タブ再起動のたびにランダム化しない）
                 if (
                   settingsWithDefaults.backgroundAutoChange.enabled &&
-                  imagesArray.length > 1 &&
                   settingsWithDefaults.selectedImageUrl &&
                   imagesArray.some((img) => img.url === settingsWithDefaults.selectedImageUrl)
                 ) {
-                  const otherMedia = imagesArray.filter(
-                    (img) => img.url !== settingsWithDefaults.selectedImageUrl
-                  );
-                  if (otherMedia.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * otherMedia.length);
-                    targetUrl = otherMedia[randomIndex].url;
-                    selectedImg = otherMedia[randomIndex];
-                  } else {
+                  const intervalMs = settingsWithDefaults.backgroundAutoChange.intervalMinutes * 60 * 1000;
+                  let shouldRotateOnLoad = false;
+                  try {
+                    const lastChangeTimeStr =
+                      localStorage.getItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE) ??
+                      localStorage.getItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE);
+                    if (!lastChangeTimeStr) {
+                      localStorage.setItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE, Date.now().toString());
+                    } else {
+                      const lastChangeTime = parseInt(lastChangeTimeStr, 10);
+                      if (!Number.isNaN(lastChangeTime) && Date.now() - lastChangeTime >= intervalMs) {
+                        shouldRotateOnLoad = true;
+                      }
+                    }
+                  } catch (error) {
+                    console.error("Failed to read media change time on load:", error);
+                  }
+
+                  if (shouldRotateOnLoad && imagesArray.length > 1) {
+                    const otherMedia = imagesArray.filter(
+                      (img) => img.url !== settingsWithDefaults.selectedImageUrl
+                    );
+                    if (otherMedia.length > 0) {
+                      const randomIndex = Math.floor(Math.random() * otherMedia.length);
+                      targetUrl = otherMedia[randomIndex].url;
+                      selectedImg = otherMedia[randomIndex];
+                      try {
+                        const now = Date.now().toString();
+                        localStorage.setItem(LOCALSTORAGE_KEY_LAST_MEDIA_CHANGE, now);
+                        localStorage.setItem(LOCALSTORAGE_KEY_LAST_VIDEO_CHANGE, now);
+                      } catch (error) {
+                        console.error("Failed to save media change time on load:", error);
+                      }
+                    }
+                  }
+
+                  if (!targetUrl) {
                     targetUrl = settingsWithDefaults.selectedImageUrl;
                     selectedImg = imagesArray.find((img) => img.url === settingsWithDefaults.selectedImageUrl);
                   }
