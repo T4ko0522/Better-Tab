@@ -8,7 +8,7 @@
   </p>
 </div>
 
-![Better Tab Screenshot](assets/screen.gif)
+![Better Tab Screenshot](assets/image.png)
 
 ## 使用方法
 
