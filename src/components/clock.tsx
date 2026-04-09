@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import type React from "react";
-import { Sun, Moon } from "lucide-react";
-import Image from "next/image";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { fetchWeather as fetchWeatherFromAPI } from "@/lib/extension-api";
 
@@ -50,33 +48,83 @@ function getTimeOfDayIconSuffix(): string {
   return "d";
 }
 
+/** localStorage のアイコンキャッシュキー */
+const ICON_CACHE_KEY = "weather_icon_cache";
+
 /**
- * 晴れの場合のみSun/Moonアイコンを返す
- * それ以外はnullを返す（Imageコンポーネントを使用）
- *
- * @param {string} description - 天気の説明（例: "晴れ", "雨"）
- * @param {string} icon - アイコンコード（例: "01d", "10d"）
- * @param {number} size - アイコンサイズ
- * @returns {React.ReactElement | null} lucideアイコンコンポーネントまたはnull
+ * localStorage からアイコンキャッシュを取得
  */
-function getSunMoonIcon(
-  description: string,
-  icon: string,
-  size: number
-): React.ReactElement | null {
-  // 晴れの場合のみSun/Moonを使用
-  const isClear = icon.startsWith("01") || description.includes("晴");
-  
-  if (!isClear) {
-    return null;
+function getIconCache(): Record<string, string> {
+  try {
+    const cached = localStorage.getItem(ICON_CACHE_KEY);
+    return cached ? JSON.parse(cached) as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * アイコン画像を fetch して Base64 データURLに変換し、localStorage にキャッシュする
+ */
+async function fetchAndCacheIcon(iconCode: string): Promise<string> {
+  const cache = getIconCache();
+  if (cache[iconCode]) return cache[iconCode];
+
+  const url = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      try {
+        cache[iconCode] = dataUrl;
+        localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(cache));
+      } catch {
+        // localStorage 容量超過時は古いキャッシュをクリアしてリトライ
+        localStorage.removeItem(ICON_CACHE_KEY);
+      }
+      resolve(dataUrl);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * キャッシュ対応の天気アイコンコンポーネント
+ * 初回は外部URLから取得し、Base64化してlocalStorageにキャッシュ
+ */
+function WeatherIcon({ iconCode, size, alt }: { iconCode: string; size: number; alt: string }): React.ReactElement {
+  const [src, setSrc] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return getIconCache()[iconCode] ?? null;
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAndCacheIcon(iconCode).then((dataUrl) => {
+      if (!cancelled) setSrc(dataUrl);
+    }).catch(() => {
+      // フォールバック: キャッシュ失敗時は直接URLを使用
+      if (!cancelled) setSrc(`https://openweathermap.org/img/wn/${iconCode}@2x.png`);
+    });
+    return () => { cancelled = true; };
+  }, [iconCode]);
+
+  if (!src) {
+    return <div style={{ width: size, height: size }} className="bg-white/20 rounded" />;
   }
 
-  const isNight = icon.endsWith("n");
-
-  return isNight ? (
-    <Moon size={size} style={{ color: "#FFFF4D", fill: "#FFFF4D" }} />
-  ) : (
-    <Sun size={size} style={{ color: "#FF7300", fill: "#FF7300" }} />
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -592,20 +640,11 @@ export function Clock({ hideWeather = false, forceDigital = false }: ClockProps)
                 weather && (
                   <div>
                     <div className="flex items-center gap-3">
-                      {getSunMoonIcon(
-                        weather.description,
-                        getTimeBasedIcon(weather.icon),
-                        40
-                      ) || (
-                        <Image
-                          src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
-                          alt={weather.description}
-                          width={40}
-                          height={40}
-                          className="size-10"
-                          unoptimized
-                        />
-                      )}
+                      <WeatherIcon
+                        iconCode={getTimeBasedIcon(weather.icon)}
+                        size={40}
+                        alt={weather.description}
+                      />
                       <div className="flex flex-col min-w-0">
                         {weather.temperature !== null && (
                           <div className="text-base font-medium text-white">
@@ -641,27 +680,17 @@ export function Clock({ hideWeather = false, forceDigital = false }: ClockProps)
                         <div className="text-sm text-white/80 mb-1">今後の予報</div>
                         <div className="space-y-1.5">
                           {weather.futureForecast.map((forecast, index) => {
-                            const sunMoonIcon = getSunMoonIcon(
-                              forecast.description,
-                              forecast.icon,
-                              20
-                            );
                             const forecastText = `${forecast.time}: ${forecast.description}`;
                             return (
                               <div
                                 key={index}
                                 className="flex items-center gap-2 text-sm text-white min-w-0"
                               >
-                                {sunMoonIcon || (
-                                  <Image
-                                    src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
-                                    alt={forecast.description}
-                                    width={20}
-                                    height={20}
-                                    className="size-5 shrink-0"
-                                    unoptimized
-                                  />
-                                )}
+                                <WeatherIcon
+                                  iconCode={forecast.icon}
+                                  size={20}
+                                  alt={forecast.description}
+                                />
                                 <span className="text-sm truncate" title={forecastText}>
                                   {forecastText}
                                 </span>
@@ -707,20 +736,11 @@ export function Clock({ hideWeather = false, forceDigital = false }: ClockProps)
         !showAnalog && !hideWeather && weather && (
           <div className="mt-2 text-base min-w-0">
             <div className="flex items-center gap-3 min-w-0">
-              {getSunMoonIcon(
-                weather.description,
-                getTimeBasedIcon(weather.icon),
-                40
-              ) || (
-                <Image
-                  src={`https://openweathermap.org/img/wn/${getTimeBasedIcon(weather.icon)}@2x.png`}
-                  alt={weather.description}
-                  width={40}
-                  height={40}
-                  className="size-10"
-                  unoptimized
-                />
-              )}
+              <WeatherIcon
+                iconCode={getTimeBasedIcon(weather.icon)}
+                size={40}
+                alt={weather.description}
+              />
               <div className="flex flex-col min-w-0">
                 {weather.temperature !== null && (
                   <div className="text-base font-medium text-white">
@@ -756,27 +776,17 @@ export function Clock({ hideWeather = false, forceDigital = false }: ClockProps)
                 <div className="text-sm text-white/80 mb-1">今後の予報</div>
                 <div className="space-y-1.5">
                   {weather.futureForecast.map((forecast, index) => {
-                    const sunMoonIcon = getSunMoonIcon(
-                      forecast.description,
-                      forecast.icon,
-                      20
-                    );
                     const forecastText = `${forecast.time}: ${forecast.description}`;
                     return (
                       <div
                         key={index}
                         className="flex items-center gap-2 text-sm text-white min-w-0"
                       >
-                        {sunMoonIcon || (
-                          <Image
-                            src={`https://openweathermap.org/img/wn/${forecast.icon}@2x.png`}
-                            alt={forecast.description}
-                            width={20}
-                            height={20}
-                            className="size-5 shrink-0"
-                            unoptimized
-                          />
-                        )}
+                        <WeatherIcon
+                          iconCode={forecast.icon}
+                          size={20}
+                          alt={forecast.description}
+                        />
                         <span className="text-sm truncate" title={forecastText}>
                           {forecastText}
                         </span>
