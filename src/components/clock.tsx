@@ -26,97 +26,37 @@ interface WeatherData {
 }
 
 /**
- * 時間帯に応じてアイコンの末尾を取得
- * day: 6:00~17:59 → "d"（day）
- * night: 18:00~5:59 → "n"（night）
- *
- * @returns {string} アイコンの末尾（"d"または"n"）
+ * 現在のJST時刻が夜間かどうかを判定
+ * night: 18:00~5:59 / day: 6:00~17:59
  */
-function getTimeOfDayIconSuffix(): string {
+function isNightTime(): boolean {
   const now = new Date();
-  // 日本時間（JST）で取得
   const jstTime = new Date(
     now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
   );
   const hours = jstTime.getHours();
-
-  // night: 18:00~5:59
-  if (hours >= 18 || hours < 6) {
-    return "n";
-  }
-  // day: 6:00~17:59
-  return "d";
+  return hours >= 18 || hours < 6;
 }
 
-/** localStorage のアイコンキャッシュキー */
-const ICON_CACHE_KEY = "weather_icon_cache";
-
 /**
- * localStorage からアイコンキャッシュを取得
+ * Meteocons アイコン名を時間帯に合わせて変更
+ * "-day" を含むアイコンは夜間に "-night" に置き換える
+ * "rain", "snow" など昼夜区別のないアイコンはそのまま返す
+ *
+ * @param {string} icon - Meteocons アイコン名（例: "clear-day"）
+ * @returns {string} 時間帯に合わせたアイコン名
  */
-function getIconCache(): Record<string, string> {
-  try {
-    const cached = localStorage.getItem(ICON_CACHE_KEY);
-    return cached ? JSON.parse(cached) as Record<string, string> : {};
-  } catch {
-    return {};
-  }
+function getTimeBasedIcon(icon: string): string {
+  if (!icon.includes("-day")) return icon;
+  return isNightTime() ? icon.replace("-day", "-night") : icon;
 }
 
 /**
- * アイコン画像を fetch して Base64 データURLに変換し、localStorage にキャッシュする
- */
-async function fetchAndCacheIcon(iconCode: string): Promise<string> {
-  const cache = getIconCache();
-  if (cache[iconCode]) return cache[iconCode];
-
-  const url = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-  const response = await fetch(url);
-  const blob = await response.blob();
-
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      try {
-        cache[iconCode] = dataUrl;
-        localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(cache));
-      } catch {
-        // localStorage 容量超過時は古いキャッシュをクリアしてリトライ
-        localStorage.removeItem(ICON_CACHE_KEY);
-      }
-      resolve(dataUrl);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
- * キャッシュ対応の天気アイコンコンポーネント
- * 初回は外部URLから取得し、Base64化してlocalStorageにキャッシュ
+ * Meteocons 天気アイコンコンポーネント
+ * ローカルの SVG ファイルを表示する
  */
 function WeatherIcon({ iconCode, size, alt }: { iconCode: string; size: number; alt: string }): React.ReactElement {
-  const [src, setSrc] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getIconCache()[iconCode] ?? null;
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchAndCacheIcon(iconCode).then((dataUrl) => {
-      if (!cancelled) setSrc(dataUrl);
-    }).catch(() => {
-      // フォールバック: キャッシュ失敗時は直接URLを使用
-      if (!cancelled) setSrc(`https://openweathermap.org/img/wn/${iconCode}@2x.png`);
-    });
-    return () => { cancelled = true; };
-  }, [iconCode]);
-
-  if (!src) {
-    return <div style={{ width: size, height: size }} className="bg-white/20 rounded" />;
-  }
-
+  const src = `/weather-icons/${iconCode}.svg`;
   return (
     <img
       src={src}
@@ -126,18 +66,6 @@ function WeatherIcon({ iconCode, size, alt }: { iconCode: string; size: number; 
       style={{ width: size, height: size }}
     />
   );
-}
-
-/**
- * アイコン名を時間帯に合わせて変更
- *
- * @param {string} icon - 元のアイコン名（例: "01d"）
- * @returns {string} 時間帯に合わせたアイコン名
- */
-function getTimeBasedIcon(icon: string): string {
-  const suffix = getTimeOfDayIconSuffix();
-  // 末尾の"d"または"n"を時間帯に合わせて変更
-  return icon.replace(/[dn]$/, suffix);
 }
 
 /** 時計のみ（天気なし）の固定幅（px） */

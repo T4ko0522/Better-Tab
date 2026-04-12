@@ -58,40 +58,62 @@ function getWeatherDescription(weatherCode: string): string {
 }
 
 /**
- * 天気コードからアイコンを取得
+ * 天気コードからMeteocons アイコン名を取得
+ * 昼夜の区別はクライアント側で行うため、ここでは "-day" サフィックスで返す
  *
- * @param {string} weatherCode - 天気コード
- * @returns {string} アイコン名
+ * @param {string} weatherCode - 気象庁の天気コード
+ * @returns {string} Meteocons アイコン名
  */
 function getWeatherIcon(weatherCode: string): string {
   const code = parseInt(weatherCode, 10);
   if (isNaN(code)) {
-    return "01d";
+    return "clear-day";
   }
 
   // 気象庁の天気コード分類
-  // 1xx: 晴れ
+  // 1xx: 晴れ系
   if (code >= 100 && code < 200) {
-    return "01d";
-  }
-  // 2xx: 曇り
-  if (code >= 200 && code < 300) {
-    // 212, 213は雨
-    if (code === 212 || code === 213) {
-      return "10d";
-    }
-    return "02d";
-  }
-  // 3xx: 雨
-  if (code >= 300 && code < 400) {
-    return "10d";
-  }
-  // 4xx: 雪
-  if (code >= 400 && code < 500) {
-    return "13d";
+    if (code === 100) return "clear-day";
+    // 晴れ時々曇り、晴れ後曇り等
+    if (code === 101 || (code >= 110 && code < 113)) return "partly-cloudy-day";
+    // 晴れ一時雨、晴れ後雨等
+    if (code === 102 || (code >= 112 && code < 130)) return "partly-cloudy-day";
+    // 晴れ後雷雨
+    if (code >= 130 && code < 140) return "thunderstorms-day";
+    // 晴れ後雪
+    if (code >= 140 && code < 200) return "partly-cloudy-day";
+    return "clear-day";
   }
 
-  return "01d";
+  // 2xx: 曇り系
+  if (code >= 200 && code < 300) {
+    // 曇り後雨、曇り一時雨等
+    if (code === 202 || code === 203 || code === 211 || code === 212 || code === 214) {
+      return "overcast-day-rain";
+    }
+    // 曇り後雪、曇り一時雪等
+    if (code === 204 || code === 205 || code === 213) {
+      return "overcast-day-snow";
+    }
+    // 純粋な曇り
+    return "overcast-day";
+  }
+
+  // 3xx: 雨系
+  if (code >= 300 && code < 400) {
+    // 雨一時雪、雨後雪等
+    if (code === 303 || code === 314) return "rain";
+    // 雷雨
+    if (code === 308) return "thunderstorms-day";
+    return "rain";
+  }
+
+  // 4xx: 雪系
+  if (code >= 400 && code < 500) {
+    return "snow";
+  }
+
+  return "clear-day";
 }
 
 const JST = "Asia/Tokyo";
@@ -361,7 +383,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({
         temperature: null,
         description: "晴れ",
-        icon: "01d",
+        icon: "clear-day",
         location: "東京",
       });
     }
@@ -376,7 +398,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({
         temperature: null,
         description: "晴れ",
-        icon: "01d",
+        icon: "clear-day",
         location: "東京",
       });
     }
@@ -413,7 +435,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({
         temperature: null,
         description: "晴れ",
-        icon: "01d",
+        icon: "clear-day",
         location: "東京",
       });
     }
